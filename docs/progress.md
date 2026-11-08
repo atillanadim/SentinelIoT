@@ -46,6 +46,7 @@ Ambiente: Windows 11, Python 3.11.16 (uv), Docker Desktop 29.9.2.
 |---|---|---|
 | Python | `uv run python --version` | Python 3.11.16 |
 | Dependências | `uv sync --frozen --dry-run` | 49 pacotes; nenhuma alteração |
+| Sync real | `uv sync --frozen` | 49 pacotes checados; nenhuma alteração |
 | Smoke test | `uv run pytest` | 1 passed em 0,26 s |
 | Lint | `uv run ruff check .` | All checks passed |
 | Tipagem | `uv run mypy src` | Success: no issues em 11 arquivos |

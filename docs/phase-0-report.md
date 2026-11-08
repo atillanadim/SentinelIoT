@@ -29,6 +29,7 @@ uv add --bounds exact pydantic PyYAML psutil
 uv add --dev --bounds exact pytest pytest-cov ruff mypy types-PyYAML pip-audit
 uv export --format requirements.txt --no-hashes --no-emit-project -o requirements.lock
 uv sync --frozen --dry-run
+uv sync --frozen
 uv run pytest
 uv run ruff check .
 uv run mypy src
