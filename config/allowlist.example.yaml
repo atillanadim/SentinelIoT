@@ -1,0 +1,12 @@
+# SentinelIoT - exemplo de allowlist estatica.
+# A allowlist do banco sera gerenciada pela CLI nas fases seguintes.
+# Nunca bloqueie gateway, DNS, DHCP, VPN, loopback ou o IP administrativo.
+
+allowlist:
+  - value: "127.0.0.1/32"
+    reason: "Loopback do proprio host"
+    created_by: "system"
+
+  - value: "192.168.57.1/32"
+    reason: "Endereco do gateway do laboratorio (exemplo)"
+    created_by: "operator"

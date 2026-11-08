@@ -1,0 +1,36 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Testes e qualidade
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Dados locais do SentinelIoT
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+*.db
+*.db-wal
+*.db-shm
+
+# Segredos e ambiente
+.env
+.env.*
+!.env.example
+
+# Editores e sistema
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store

@@ -1,0 +1,46 @@
+# SentinelIoT - configuracao de exemplo.
+# Copie para config/config.yaml e ajuste para o laboratorio.
+# Nao inclua segredos neste arquivo.
+
+app:
+  name: sentineliot
+  environment: lab
+  log_level: INFO
+
+agent:
+  mode: observe          # observe | dry_run | enforce
+  poll_interval_seconds: 2
+  data_dir: "./data"
+
+honeypot:
+  enabled: true
+  profile: camera_simulator
+  container_name: sentineliot-camera-01
+  image: sentineliot-honeypot:0.1.0
+  listen_port: 8080
+  publish_host: "127.0.0.1"   # no laboratorio Linux, usar o IP host-only da VM
+  cpu_limit: "0.25"
+  memory_limit: "128m"
+  pids_limit: 64
+  read_only: true
+
+detection:
+  event_retention_days: 90
+  rate_window_seconds: 60
+  max_events_per_source: 20
+
+firewall:
+  adapter: dry_run       # dry_run | nftables
+  enforce_enabled: false # nunca habilitar sem homologacao e confirmacao
+  default_ttl_seconds: 900
+  max_ttl_seconds: 3600
+  max_active_blocks: 20
+  max_new_blocks_per_hour: 10
+
+allowlist:
+  - "127.0.0.1/32"
+  # Adicionar no laboratorio: gateway, DNS, DHCP, VPN e IP administrativo.
+
+notifications:
+  local_enabled: true
+  external_enabled: false
