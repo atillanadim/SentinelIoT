@@ -32,14 +32,14 @@ Write-Host ""
 $missing = 0
 if (-not (Test-Tool -Name "Git" -Command "git")) { $missing++ }
 if (-not (Test-Tool -Name "uv" -Command "uv")) { $missing++ }
-if (-not (Test-Tool -Name "Python" -Command "python")) { $missing++ }
 if (-not (Test-Tool -Name "Docker CLI" -Command "docker")) { $missing++ }
 
 Write-Host ""
 Write-Host "Versoes encontradas:"
 & git --version
 & uv --version
-& python --version
+Write-Host "Python do projeto (venv):"
+& uv run python --version
 & docker --version
 
 Write-Host ""

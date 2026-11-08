@@ -49,6 +49,9 @@ docker run --rm hello-world
 - Docker Desktop: servidor 29.9.2; `hello-world` executado com sucesso.
 - Lockfile de requisitos gerado.
 
+O Docker Desktop foi parado após a validação para liberar recursos. Ele não é o
+runtime oficial do laboratório.
+
 ## 5. O que não foi feito
 
 - Nenhum honeypot foi criado.

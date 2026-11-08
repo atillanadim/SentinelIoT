@@ -54,6 +54,9 @@ Ambiente: Windows 11, Python 3.11.16 (uv), Docker Desktop 29.9.2.
 | Docker execução | `docker run --rm hello-world` | Hello from Docker! (sucesso) |
 | Lockfile | `uv export --format requirements.txt --no-hashes --no-emit-project -o requirements.lock` | Arquivo gerado |
 
+O Docker Desktop foi parado após a validação, para restaurar o estado inicial e
+liberar memória. Ele não é o runtime oficial do laboratório.
+
 ## 6. Riscos em aberto
 
 - VM Linux ainda não provisionada.
