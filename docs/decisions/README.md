@@ -14,6 +14,7 @@
 | ADR-0010 | Critérios de ativação do modo enforce | Aceito |
 | ADR-0011 | Topologia de laboratório | Aceito |
 | ADR-0012 | Stack da CLI e padrão de saída | Aceito |
+| ADR-0013 | Provisionamento offline da VM de laboratório | Aceito |
 
 Novas decisões devem seguir o formato: contexto, alternativas, decisão,
 justificativa, consequências, riscos e data.

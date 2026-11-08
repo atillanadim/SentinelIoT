@@ -1,7 +1,8 @@
 # Laboratório isolado
 
-**Versão:** 0.1 (Fase 0)
-**Estado:** topologia definida; provisionamento pendente de autorização.
+**Versão:** 1.0 (laboratório provisionado)
+**Estado:** VM `sentinel-lab` provisionada e isolada; snapshots `clean-os` e
+`toolchain-ready` criados, com restauração testada.
 
 ## 1. Decisão
 
@@ -66,6 +67,71 @@ Rede host-only dedicada. Sem bridge para a rede doméstica durante os testes.
 A rede 192.168.56.0/24 já é usada por outras VMs do host. Recomenda-se não
 reutilizá-la para evitar interferência entre experimentos.
 
+### 4.1 Estado real do provisionamento (2026-11-08)
+
+Já executado e verificado:
+
+- Adaptador host-only novo criado no VirtualBox:
+  `VirtualBox Host-Only Ethernet Adapter #2`,
+  GUID `c8ab6a0c-8cec-4306-b445-94df7a08b939`.
+- Endereço do host no adaptador: `192.168.57.1/24`.
+- DHCP do adaptador: `192.168.57.100` a `192.168.57.254`, habilitado.
+- Nenhuma VM em execução no momento da criação.
+- VM `sentinel-lab` criada e registrada, UUID
+  `ce1c93b3-22a2-4d39-a574-24a7edfe2dcc`, pasta `D:\VMs\sentinel-lab`.
+- Disco VDI de 20 GB criado, UUID
+  `8827a082-165c-4ffc-a6fa-d8c14f3133bf`.
+- 2 vCPU, 4096 MB de RAM, áudio desabilitado, USB desabilitado.
+- NIC 1 em modo host-only, conectada ao adaptador #2; sem NAT e sem bridge.
+- ISO oficial `ubuntu-24.04.5-live-server-amd64.iso` baixada e validada:
+  SHA-256 `97f3d7ffb032c3eb3b23d2c8be9cc76e60c2c1f2c0146ba5ba9fe01cafae0fd8`
+  (confere com `SHA256SUMS` oficial).
+- Bundle offline criado em `D:\VMs\sentinel-lab\offline-bundle` e empacotado
+  como `D:\VMs\sentinel-lab\sentinel-bundle.iso` (257 MB, rótulo
+  `SENTINELBUNDLE`):
+  - repositório APT local com 93 pacotes (Git, curl, jq, iproute2, tcpdump,
+    iptables, nftables, conntrack, openssl e dependências);
+  - CPython 3.11.16 standalone, SHA-256
+    `25844eb97cdc72cdc78addaad0969ce3b2133a4de54bfcfa4d57f8a6d095eaab`
+    validado;
+  - uv 0.12.5, Docker Engine 29.9.3 static, Compose v5.6.1;
+  - imagem `hello-world` salva para teste sem rede;
+  - 48 wheels `cp311`/manylinux das dependências do projeto;
+  - cópia do código-fonte sem `.git` e sem `.venv`;
+  - `install.sh` idempotente.
+- Instalação não assistida iniciada em 2026-11-08 com autoinstall próprio
+  (IP fixo `192.168.57.10/24`, sem gateway padrão, `shutdown: poweroff`).
+- IP fixo da VM: `192.168.57.10/24`, **sem gateway padrão**.
+- SSH habilitado somente na rede host-only. O acesso real foi por **senha**;
+  a chave em `D:\VMs\sentinel-lab\id_ed25519` foi configurada no autoinstall,
+  mas não foi aplicada pelo instalador (autenticação por chave falhou).
+- Credenciais locais em `D:\VMs\sentinel-lab\credentials.txt` (fora do
+  controle de versão).
+
+Concluído e verificado em 2026-11-08:
+
+- Ubuntu 24.04.5 LTS instalado via autoinstall; a VM liga com
+  `192.168.57.10/24` e **sem rota padrão**.
+- `install.sh` do bundle executado como root; todas as etapas concluídas.
+- Versões reais na VM: Python 3.11.16, uv 0.12.5, Git 2.43.0,
+  Docker 29.9.3 (static) e Compose v5.6.1.
+- Docker ativo com `driver=overlayfs` e `cgroup=systemd`; imagem
+  `hello-world` executada sem rede.
+- Projeto validado dentro da VM: `pytest` 1 passed, `ruff` sem violações e
+  `mypy` sem erros em 11 arquivos.
+- Isolamento revalidado: DNS externo indisponível, Internet bloqueada e
+  `192.168.1.1` inacessível.
+- Snapshot `clean-os` com UUID `077990be-a08d-47e5-b0eb-e0bca653df00`.
+- Snapshot `toolchain-ready` com UUID
+  `c0d814a5-65db-462b-8b0d-efca1d042c5d`.
+- Restauração de `clean-os` testada: sem Docker, uv, Python 3.11 ou projeto
+  (apenas o Git do SO base).
+- Restauração de `toolchain-ready` testada: Docker, `hello-world`, `pytest`,
+  `ruff` e `mypy` novamente aprovados.
+- ISO do bundle regenerado com o `install.sh` final: 256,8 MB, SHA-256
+  `5453307164041e5948f6c5e5d32ff35bc6a51e6ccc9421d85e764bda876b30e4`.
+- DVD do bundle desanexado; ordem de boot `disk` e depois `dvd`.
+
 ## 5. Sequência de preparação
 
 1. Registrar autorização em `docs/lab-authorization.md`.
@@ -113,7 +179,10 @@ Os comandos acima só fazem sentido depois da Fase 1.
 
 ## 8. Limitações
 
-- As VMs ainda não foram criadas nesta fase.
+- A VM e os dois snapshots já existem; qualquer experimento deve partir de
+  `toolchain-ready` e ser descartado restaurando esse snapshot.
+- A toolchain é instalada a partir de um ISO offline; atualizações exigem
+  regenerar o bundle.
 - A criação de rede host-only altera o VirtualBox e exige autorização.
 - VirtualBox e WSL2/Hyper-V podem coexistir com custo de desempenho.
 - O host tem 16 GB de RAM; executar VMs e Docker ao mesmo tempo exige
