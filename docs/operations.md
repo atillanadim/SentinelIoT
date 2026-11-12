@@ -1,30 +1,47 @@
 # Operação
 
-**Versão:** 0.1 (Fase 0)
-**Estado:** procedimentos planejados; a CLI funcional será implementada nas
-Fases 2 a 6.
+**Versão:** 0.2 (MVP local)
+**Estado:** CLI e runtime local implementados; firewall e container planejados.
 
-## 1. Comandos previstos
+## 1. Comandos disponíveis
 
 ```text
-sentineliot setup
-sentineliot start
+sentineliot start [--foreground]
 sentineliot stop
 sentineliot status
-sentineliot events list
-sentineliot events show <event_id>
-sentineliot config validate
-sentineliot allowlist list
-sentineliot allowlist add <IP-ou-CIDR> --reason "<motivo>"
-sentineliot allowlist remove <id>
-sentineliot firewall status
-sentineliot firewall dry-run
-sentineliot firewall unblock <rule_id>
-sentineliot report export --format json
+sentineliot scan
+sentineliot honeypots available
+sentineliot honeypots list
+sentineliot honeypots add <perfil> [--port N] [--host IP] [--id NOME]
+sentineliot honeypots remove <id>
+sentineliot events list [--limit N] [--ip IP] [--type TIPO]
+sentineliot events show <event_id-ou-prefixo>
+sentineliot bans list [--status STATUS]
+sentineliot bans show <ip>
+sentineliot bans block|allow|ignore|reset <ip> [--note "motivo"]
+sentineliot bans export [--format json|csv] [--output ARQUIVO]
+sentineliot simulate [--ip IP]
 sentineliot diagnostics
+sentineliot version
+sentineliot shell
 ```
 
-Nenhum desses comandos está implementado na Fase 0.
+No Windows com caminho contendo caracteres especiais, use
+`.\sentineliot.cmd` no lugar de `sentineliot`. O launcher apenas garante o
+`PYTHONPATH` correto para o Python 3.11.
+
+Ainda não implementados: `setup`, `config validate`, `allowlist add/remove`,
+`firewall status/dry-run/unblock` e `report export`.
+
+## 1.1. Semântica das decisões
+
+`bans block <ip>` registra a decisão no banco e na auditoria, mas **não altera
+firewall**. O mesmo vale para `allow`, `ignore` e `reset`. A aplicação real da
+decisão exige um adaptador homologado e o modo `enforce`, previsto para uma fase
+posterior. Não trate a lista de ban como bloqueio efetivo de rede.
+
+O comando `scan` lê o spool JSONL das iscas. Ele não faz varredura de portas,
+não acessa hosts e não sonda a rede.
 
 ## 2. Ciclo operacional planejado
 
@@ -50,30 +67,37 @@ Instalação
 2. Confirmar que o modo é `observe`.
 3. Confirmar que `enforce_enabled` é `false`.
 4. Confirmar allowlist e faixas protegidas.
-5. Verificar Docker, banco e diretórios.
-6. Iniciar o honeypot em rede isolada.
+5. Verificar banco, spool e diretórios.
+6. Iniciar as iscas em loopback ou rede host-only isolada.
 7. Iniciar o agente.
-8. Executar health check e um evento de teste controlado.
+8. Executar health check (`diagnostics`) e um evento de teste controlado.
 
 ## 4. Status
 
-A saída planejada de `status` deve mostrar:
+A saída de `status` mostra:
 
-- versão do agente;
-- estado do agente;
-- estado do container;
-- modo de resposta atual;
-- adaptador de firewall;
+- versão do agente e autor;
+- arquivo de configuração e modo de resposta;
+- adaptador de firewall (sempre com o aviso de que nada é aplicado);
+- estado do agente em segundo plano e PID;
+- eventos totais e nas últimas 24 horas;
+- IPs observados, pendentes e resumo das decisões;
 - último evento;
-- eventos nas últimas 24 horas;
-- bloqueios ativos e expiração;
-- saúde do banco e do notificador.
+- iscas configuradas e se estão ativas.
 
 ## 5. Eventos
 
-A saída planejada de `events list` deve mostrar horário, IP de origem, serviço,
-tipo, severidade, decisão e status do bloqueio. Nunca exibir segredos, corpo de
-requisição, query string ou payload.
+`events list` mostra horário, IP de origem, isca, tipo, severidade, método e
+caminho. `events show` detalha um evento e aceita prefixo do ID. Nunca são
+exibidos segredos, corpo de requisição, query string ou payload. O corpo do
+`POST` é drenado e descartado pela isca.
+
+## 5.1. Lista de ban
+
+`bans list` mostra os IPs que interagiram com as iscas, com contagem, severidade
+máxima, decisão, primeira/última interação e último caminho. Use
+`bans show <ip>` para ver os últimos eventos daquele IP. As decisões são
+auditadas na tabela `audit_log`; o efeito de rede continua desabilitado.
 
 ## 6. Notificações
 

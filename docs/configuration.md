@@ -1,7 +1,7 @@
 # Configuração
 
-**Versão:** 0.1 (Fase 0)
-**Estado:** proposta; o schema será implementado e validado com Pydantic na Fase 2.
+**Versão:** 0.2 (MVP local)
+**Estado:** carregamento e validação implementados; schema evolui com o runtime.
 
 ## 1. Princípios
 
@@ -42,16 +42,21 @@
 
 | Campo | Tipo | Padrão | Regra |
 |---|---|---|---|
-| `enabled` | bool | `true` | Se falso, não inicia o container. |
-| `profile` | string | `camera_simulator` | Perfil suportado. |
-| `container_name` | string | `sentineliot-camera-01` | Nome fixo e validado. |
-| `image` | string | `sentineliot-honeypot:0.1.0` | Imagem fixada; digest na Fase 1. |
+| `enabled` | bool | `true` | Se falso, nenhuma isca é criada por padrão. |
+| `profile` | string | `camera-http` | `camera-http`, `router-admin`, `ssh-banner` ou `telnet-iot`. |
+| `container_name` | string | `sentineliot-camera-01` | Reservado ao runtime em container. |
+| `image` | string | `sentineliot-honeypot:0.1.0` | Reservado ao runtime em container. |
 | `listen_port` | int | `8080` | Porta de laboratório; validar disponibilidade. |
 | `publish_host` | IP | `127.0.0.1` | No laboratório, usar o IP host-only da VM. |
-| `cpu_limit` | string | `0.25` | Limite de CPU do container. |
-| `memory_limit` | string | `128m` | Limite de memória. |
-| `pids_limit` | int | `64` | Limite de processos. |
-| `read_only` | bool | `true` | Filesystem somente leitura quando viável. |
+| `cpu_limit` | string | `0.25` | Reservado ao runtime em container. |
+| `memory_limit` | string | `128m` | Reservado ao runtime em container. |
+| `pids_limit` | int | `64` | Reservado ao runtime em container. |
+| `read_only` | bool | `true` | Reservado ao runtime em container. |
+
+O MVP local usa apenas `enabled`, `profile`, `listen_port` e `publish_host`.
+Aliases legados de `profile` (`camera_simulator`, `camera`, `router`, `ssh`,
+`telnet`) são convertidos para o identificador novo ao carregar o estado das
+iscas.
 
 ### detection
 
@@ -114,15 +119,9 @@ agent:
 
 honeypot:
   enabled: true
-  profile: camera_simulator
-  container_name: sentineliot-camera-01
-  image: sentineliot-honeypot:0.1.0
+  profile: camera-http
   listen_port: 8080
   publish_host: "127.0.0.1"
-  cpu_limit: "0.25"
-  memory_limit: "128m"
-  pids_limit: 64
-  read_only: true
 
 detection:
   event_retention_days: 90
@@ -155,6 +154,16 @@ notifications:
 
 ## 7. Estado de implementação
 
-Na Fase 0 existe apenas o exemplo. O carregamento, o schema e a validação serão
-implementados na Fase 2. Nenhuma configuração atual deve ser considerada
-funcional ou homologada.
+O carregamento YAML, os defaults seguros e a validação estrita já estão
+implementados. Erros de validação interrompem a inicialização e são apresentados
+como `ConfigurationError`. O modo `enforce` continua exigindo
+`firewall.enforce_enabled=true`, e o adaptador `nftables` continua exigindo
+habilitação explícita — mas nenhuma regra real de firewall é aplicada nesta
+fase.
+
+O diretório de dados pode ser alterado por `agent.data_dir`, pela opção
+`--data-dir` ou pela variável `SENTINELIOT_DATA_DIR`. A variável
+`SENTINELIOT_CONFIG` força um arquivo de configuração específico. A variável
+`SENTINELIOT_LOG_DIR` altera o diretório do log do agente.
+
+Nenhuma configuração atual deve ser considerada homologada para produção.

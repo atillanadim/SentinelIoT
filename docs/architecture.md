@@ -1,7 +1,12 @@
 # Arquitetura do SentinelIoT
 
-**Versão:** 0.1 (Fase 0)
-**Escopo:** arquitetura proposta do MVP, ainda sem implementação funcional.
+**Versão:** 0.2 (MVP local)
+**Escopo:** arquitetura-alvo em container; o MVP local em Python é uma
+implementação de referência do mesmo contrato de eventos, spool e banco.
+
+> O MVP local descrito em [ADR-0014](decisions/ADR-0014.md) executa iscas HTTP,
+> SSH e Telnet diretamente no host, em loopback, sem Docker e sem firewall. O
+> runtime oficial continua sendo o da VM Linux com iscas em container.
 
 ## 1. Contexto e limites
 

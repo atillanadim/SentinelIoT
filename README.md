@@ -1,17 +1,14 @@
 # SentinelIoT
 
 Agente defensivo local para redes domésticas e pequenas empresas. O produto
-executa um serviço-isca (honeypot) que simula uma câmera IP genérica, registra
-interações suspeitas, aplica políticas explicáveis e, somente quando habilitado
-e homologado, solicita bloqueio temporário e reversível no firewall de um
-gateway Linux de laboratório.
+executa serviços-isca (honeypots) que simulam uma câmera IP, um roteador, um SSH
+corporativo e um dispositivo Telnet, registra interações suspeitas e monta uma
+lista de IPs para decisão do administrador.
 
-**Status atual: Fase 0 concluída no host de desenvolvimento.**
-O runtime oficial será provisionado em uma VM Linux dedicada antes da Fase 1.
-
-Não há honeypot, agente funcional, banco de eventos ou adaptador de firewall
-implementados ainda. O repositório contém apenas a estrutura, a documentação,
-a configuração de exemplo e a base de desenvolvimento.
+> **Status atual:** MVP funcional no host de desenvolvimento, com runtime local
+> em Python. O runtime oficial isolado em container na VM Linux continua
+> planejado para a Fase 1. Veja o
+> [ADR-0014](docs/decisions/ADR-0014.md).
 
 ## Aviso de segurança
 
@@ -19,20 +16,27 @@ a configuração de exemplo e a base de desenvolvimento.
 - Não execute varreduras na Internet, não acesse câmeras reais e não teste em
   redes de terceiros.
 - O modo padrão é `observe`. O bloqueio automático é desabilitado.
-- Nunca limpe regras de firewall existentes.
+- `bans block <ip>` **apenas registra a decisão**. Nenhuma regra de firewall é
+  criada, alterada ou aplicada nesta versão.
+- `scan` é uma varredura passiva do spool local; não é um scanner de rede.
 - A isca só detecta o tráfego que chega até ela. Ausência de alertas não prova
   que a rede está livre de comprometimento.
-- O container reduz a superfície de risco, mas não é uma fronteira de segurança
-  absoluta.
+- As iscas escutam em `127.0.0.1` por padrão. Não publique em `0.0.0.0` sem uma
+  rede de laboratório isolada e autorização.
 
-## O que o projeto é
+## O que já funciona
 
-- Uma camada complementar de detecção por deception.
-- Um agente local em Python com CLI em texto simples.
-- Um honeypot de câmera IP simulada em container isolado.
-- Um registro mínimo de eventos em SQLite.
-- Um motor de políticas com allowlist, TTL e limites.
-- Um adaptador de firewall inicialmente em `dry_run`.
+- Shell interativo com banner ASCII, nome do projeto e autor `s0ra`.
+- Perfis de honeypot: `camera-http`, `router-admin`, `ssh-banner` e
+  `telnet-iot`.
+- Inclusão, remoção e listagem de iscas em tempo de execução.
+- Agente em segundo plano que sobe e desce iscas conforme o estado persistido.
+- Detecção de interações HTTP, SSH e Telnet, com classificação explicável.
+- Spool JSONL append-only e coleta incremental para SQLite.
+- Lista de ban com IPs observados e decisões `pending`, `blocked`, `allowed`,
+  `ignored` e `allowlisted`.
+- Exportação da lista em JSON e CSV.
+- Comando `simulate` para demonstrar o fluxo sem uma segunda máquina.
 
 ## O que o projeto não é
 
@@ -41,75 +45,171 @@ a configuração de exemplo e a base de desenvolvimento.
 - Um produto com suporte universal a roteadores.
 - Uma solução com IA/ML no MVP.
 - Uma promessa de prevenção de todos os ataques IoT.
+- Um honeypot pronto para exposição direta na Internet.
 
-## Arquitetura resumida
+## Início rápido (Windows)
 
-O runtime oficial do MVP roda em uma VM Linux dedicada, com rede host-only
-isolada. O Windows é usado apenas para edição e verificações rápidas.
+Pré-requisitos: Windows 11, Python 3.11 e [uv](https://docs.astral.sh/uv/).
 
-```text
-Administrador -> CLI local -> Agente SentinelIoT (non-root)
-                                  |-> Policy Engine
-                                  |-> SQLite
-                                  |-> Notifier local
-                                  |-> Health/Metrics
-                                  |-> FirewallAdapter (DryRun por padrão)
-                                  |     Fase 5: helper restrito -> nftables
-                                  |-> Docker Engine -> Honeypot (não-root,
-                                        read-only, sem egress, sem docker.sock)
-                                        -> spool JSONL -> Event Collector
-VM de teste (host-only) --TCP--> porta publicada do honeypot
+```powershell
+uv sync
+.\sentineliot.cmd
 ```
 
-Consulte [docs/architecture.md](docs/architecture.md) para os fluxos completos,
-bordas de confiança e decisões.
+O comando acima abre o shell interativo e mostra o banner. Se o caminho do
+projeto tiver caracteres especiais, o launcher usa `PYTHONPATH` para contornar
+uma limitação do Python 3.11 ao ler arquivos `.pth` no Windows.
+
+Também é possível executar comandos diretos:
+
+```powershell
+.\sentineliot.cmd version
+.\sentineliot.cmd --data-dir data/dev status
+```
+
+Em Linux/macOS com caminho ASCII, `uv run sentineliot` funciona diretamente.
+Em qualquer plataforma, o equivalente explícito é:
+
+```bash
+PYTHONPATH=src uv run python -m sentineliot
+```
+
+## Fluxo de uso
+
+### 1. Conhecer e configurar as iscas
+
+Dentro do shell:
+
+```text
+sentineliot> honeypots available
+sentineliot> honeypots list
+sentineliot> honeypots add telnet-iot --port 2323 --id telnet-01
+```
+
+Sem o shell:
+
+```powershell
+.\sentineliot.cmd honeypots available
+.\sentineliot.cmd honeypots add router-admin --port 8081 --id router-01
+```
+
+### 2. Iniciar o agente
+
+```powershell
+.\sentineliot.cmd start
+```
+
+O agente roda em segundo plano, escreve o log e mantém as iscas ativas. Use
+`start --foreground` para acompanhar no terminal atual e `stop` para encerrar.
+
+### 3. Interagir com uma isca
+
+Em outro terminal, aponte uma ferramenta de teste **do seu laboratório** para a
+porta da isca. Exemplo com uma requisição HTTP local:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8080/admin/ -Headers @{ "User-Agent" = "sqlmap/1.8" }
+```
+
+### 4. Coletar, revisar e decidir
+
+```powershell
+.\sentineliot.cmd scan
+.\sentineliot.cmd events list
+.\sentineliot.cmd bans list
+.\sentineliot.cmd bans show 192.168.57.66
+.\sentineliot.cmd bans block 192.168.57.66 --note "tentativa de login"
+```
+
+`start` já coleta eventos periodicamente; `scan` força uma coleta imediata. A
+lista de ban é a fila de decisão do administrador.
+
+### 5. Demonstrar sem uma segunda máquina
+
+```powershell
+.\sentineliot.cmd simulate
+.\sentineliot.cmd bans list
+```
+
+`simulate` grava interações de exemplo no spool e as coleta imediatamente. Ela
+não sonda a rede e não simula tráfego real.
+
+## Comandos principais
+
+| Comando | Função |
+|---|---|
+| `start [--foreground]` | inicia o agente e as iscas |
+| `stop` | para o agente e as iscas |
+| `status` | mostra agente, iscas, eventos e lista de ban |
+| `scan` | coleta interações novas do spool (passivo) |
+| `honeypots available` | lista os perfis disponíveis |
+| `honeypots list` | lista as iscas configuradas |
+| `honeypots add <perfil>` | adiciona uma isca (`--port`, `--host`, `--id`) |
+| `honeypots remove <id>` | remove uma isca |
+| `events [list]` | lista interações (`--limit`, `--ip`, `--type`) |
+| `events show <id>` | detalha uma interação |
+| `bans [list]` | lista IPs observados (`--status`) |
+| `bans show <ip>` | detalha um IP e seus eventos |
+| `bans block/allow/ignore/reset <ip>` | registra uma decisão (`--note`) |
+| `bans export --format json\|csv` | exporta a lista de ban |
+| `simulate [--ip <ip>]` | gera interações de demonstração |
+| `diagnostics` | verifica ambiente, banco, spool e agente |
+| `version` | mostra versão e autor |
+
+## Lista de ban e privacidade
+
+Cada IP de origem que interage com uma isca aparece uma única vez na tabela
+`suspects`, com data da primeira e da última interação, contagem de eventos,
+severidade máxima e último caminho observado.
+
+As decisões são registradas e auditadas:
+
+- `pending`: aguardando decisão do administrador;
+- `blocked`: o administrador decidiu bloquear (sem efeito de rede nesta fase);
+- `allowed`: o administrador decidiu permitir;
+- `ignored`: IP marcado como ignorado;
+- `allowlisted`: IP pertence à allowlist da configuração.
+
+O banco não armazena corpo de requisição, query string, senha ou payload. Os
+eventos guardam apenas metadados mínimos: horário, IP/porta de origem, isca,
+tipo, severidade, método, caminho, status HTTP e user-agent.
+
+## Configuração
+
+O runtime procura `config/config.yaml` e, se não existir, usa
+`config/config.example.yaml`. O modo seguro padrão é `observe`, com firewall
+`dry_run` e `enforce_enabled: false`.
+
+```powershell
+.\sentineliot.cmd --config config/config.yaml --data-dir data status
+```
+
+Principais campos: `agent.mode`, `agent.poll_interval_seconds`,
+`agent.data_dir`, `honeypot.publish_host`, `honeypot.listen_port` e
+`allowlist`. Veja [docs/configuration.md](docs/configuration.md).
+
+## Desenvolvimento
+
+```powershell
+uv sync
+uv run pytest
+uv run ruff check src tests
+uv run mypy src
+```
+
+O venv do Windows serve para desenvolvimento e testes. O runtime oficial será
+provisionado na VM Linux conforme [docs/lab.md](docs/lab.md) e
+[docs/installation.md](docs/installation.md).
 
 ## Estrutura do repositório
 
 ```text
-config/            configuração de exemplo, sem segredos
-docs/              arquitetura, ameaças, instalação, operação, privacidade e ADRs
+config/            configuração de exemplo
+docs/              arquitetura, ameaças, operação, privacidade e ADRs
 scripts/           verificações e utilitários de laboratório
-src/sentineliot/   pacote Python (esqueleto na Fase 0)
-tests/             testes unitários, integração, segurança e desempenho
+src/sentineliot/   CLI, agentes, iscas, coleta e persistência
+tests/             testes unitários e de integração
 ```
-
-## Pré-requisitos
-
-Desenvolvimento no Windows:
-
-- Windows 11 x86_64.
-- Python 3.11.16 (o repositório fixa 3.11).
-- uv.
-- Git.
-- Docker Desktop apenas para verificação opcional; o laboratório oficial é a VM.
-
-Runtime e laboratório:
-
-- VM Linux dedicada (Ubuntu 22.04/24.04 ou Debian 12), x86_64.
-- Docker Engine e Docker Compose na VM.
-- Rede host-only isolada, por exemplo 192.168.57.0/24.
-- Snapshot da VM antes de qualquer teste de firewall.
-- Autorização de laboratório registrada em `docs/lab-authorization.md`.
-
-## Desenvolvimento (Windows)
-
-```powershell
-uv venv --python 3.11
-uv sync
-uv run pytest
-uv run ruff check .
-uv run mypy src
-```
-
-O venv do Windows serve para edição e testes rápidos. O venv de runtime será
-criado dentro da VM Linux. O arquivo `.venv/` não é versionado.
-
-## Laboratório (VM Linux)
-
-O provisionamento da VM e da rede host-only é uma etapa separada da Fase 0 e
-deve ser executado com autorização. O roteiro está em
-[docs/installation.md](docs/installation.md) e [docs/lab.md](docs/lab.md).
 
 ## Documentação
 
@@ -121,7 +221,6 @@ deve ser executado com autorização. O roteiro está em
 - [Privacidade](docs/privacy.md)
 - [Plano de testes](docs/test-plan.md)
 - [Progresso](docs/progress.md)
-- [Relatório da Fase 0](docs/phase-0-report.md)
 - [Laboratório](docs/lab.md)
 - [Decisões arquiteturais](docs/decisions/)
 

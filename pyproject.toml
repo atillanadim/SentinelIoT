@@ -21,11 +21,12 @@ dev = [
     "pytest==9.2.0",
     "pytest-cov==7.1.0",
     "ruff==0.17.4",
+    "types-psutil>=7.2.2.20261111",
     "types-pyyaml==6.0.12.20261103",
 ]
 
-# O entrypoint `sentineliot` sera habilitado quando a CLI funcional existir
-# (Fase 2). Nao declarar um script quebrado na Fase 0.
+[project.scripts]
+sentineliot = "sentineliot.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sentineliot"]

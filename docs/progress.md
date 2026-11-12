@@ -1,7 +1,49 @@
 # Progresso do projeto
 
-**Fase atual:** 0 — concluída (host e laboratório Linux)
-**Última atualização:** 2026-11-08
+**Fase atual:** MVP local concluído; Fase 1 (runtime em container) pendente.
+**Última atualização:** 2026-11-12
+
+## MVP local (concluído em 2026-11-12)
+
+Entrega de um ciclo funcional de demonstração e operação assistida no host de
+desenvolvimento, sem Docker e sem alterar firewall. Decisão registrada em
+[ADR-0014](decisions/ADR-0014.md).
+
+Implementado:
+
+- CLI com banner ASCII (projeto, autor `s0ra` e versão) e shell interativo.
+- Perfis `camera-http`, `router-admin`, `ssh-banner` e `telnet-iot`.
+- Estado persistido das iscas e inclusão/remoção em tempo de execução.
+- Agente em segundo plano com reconciliação dinâmica das iscas.
+- Servidores HTTP, SSH e Telnet falsos, sem armazenar corpos ou credenciais.
+- Spool JSONL append-only e coletor incremental com deduplicação por evento.
+- SQLite com eventos, suspeitos/lista de ban, auditoria e configurações.
+- Decisões `pending`, `blocked`, `allowed`, `ignored` e `allowlisted`.
+- Exportação da lista de ban em JSON e CSV.
+- Comandos `simulate`, `scan`, `diagnostics`, `status`, `start` e `stop`.
+
+Evidências (Windows 11, Python 3.11.16, uv):
+
+| Verificação | Comando | Resultado |
+|---|---|---|
+| Testes | `uv run pytest -q` | 50 passed |
+| Lint | `uv run ruff check src tests` | All checks passed |
+| Tipagem | `uv run mypy src` | Success: no issues em 34 arquivos |
+| Versão | `.\sentineliot.cmd version` | `SentinelIoT 0.1.0`, autor `s0ra` |
+| Shell/banner | `.\sentineliot.cmd --no-color shell` | banner ASCII e prompt `sentineliot>` |
+| Início | `.\sentineliot.cmd --data-dir data/e2e start` | daemon e `camera-01` ativos |
+| Interação HTTP | `GET /server-status` com UA `nikto` | 200 e dois eventos classificados |
+| Coleta | `.\sentineliot.cmd --data-dir data/e2e scan` | 2 eventos novos, 1 IP novo |
+| Lista de ban | `.\sentineliot.cmd --data-dir data/e2e bans list` | IP observado com severidade `high` |
+| Parada | `.\sentineliot.cmd --data-dir data/e2e stop` | agente encerrado e spool coletado |
+
+Limitações conhecidas desta etapa:
+
+- `bans block` não aplica firewall; apenas registra a decisão.
+- O runtime local não substitui o isolamento do container previsto na Fase 1.
+- Em caminhos Windows com acentos, `uv run sentineliot` falha porque o Python
+  3.11 lê o arquivo `.pth` do uv com `cp1252`. O launcher `sentineliot.cmd`
+  contorna o problema com `PYTHONPATH`.
 
 ## 0. Laboratório Linux (concluído)
 
@@ -60,16 +102,17 @@ Pendente:
 
 ## 3. Pendente
 
-- Iniciar a Fase 1: honeypot isolado em Docker.
+- Iniciar a Fase 1: migrar as iscas locais para o runtime isolado em Docker.
+- Manter o mesmo contrato de spool JSONL, eventos e banco entre os runtimes.
 - Validar publicação de porta e rede interna do Docker na Fase 1.
 - Definir licença antes de distribuição.
 
-## 4. Fora de escopo nesta fase
+## 4. Fora de escopo da Fase 0
 
-- Honeypot funcional.
-- Agente funcional.
-- Banco de eventos.
-- CLI funcional.
+- Honeypot funcional (coberto depois pelo MVP local).
+- Agente funcional (coberto depois pelo MVP local).
+- Banco de eventos (coberto depois pelo MVP local).
+- CLI funcional (coberto depois pelo MVP local).
 - Notificações.
 - Adaptador de firewall.
 - Qualquer alteração de firewall, rede ou dispositivo real.

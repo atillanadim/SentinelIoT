@@ -14,11 +14,13 @@ agent:
 
 honeypot:
   enabled: true
-  profile: camera_simulator
-  container_name: sentineliot-camera-01
-  image: sentineliot-honeypot:0.1.0
+  # camera-http | router-admin | ssh-banner | telnet-iot
+  profile: camera-http
   listen_port: 8080
   publish_host: "127.0.0.1"   # no laboratorio Linux, usar o IP host-only da VM
+  # Campos reservados ao runtime em container (Fase 1):
+  container_name: sentineliot-camera-01
+  image: sentineliot-honeypot:0.1.0
   cpu_limit: "0.25"
   memory_limit: "128m"
   pids_limit: 64
