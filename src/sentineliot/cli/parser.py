@@ -103,6 +103,36 @@ def build_parser() -> argparse.ArgumentParser:
     )
     simulate.add_argument("--ip", default="10.10.10.66", help="IP de origem simulado")
 
+    serve = subparsers.add_parser(
+        "serve",
+        aliases=["web", "dashboard"],
+        help="abre o dashboard local somente leitura",
+    )
+    serve.add_argument("--host", default="127.0.0.1", help="endereco de escuta")
+    serve.add_argument("--port", type=int, default=8787, help="porta TCP do dashboard")
+    serve.add_argument(
+        "--refresh",
+        type=int,
+        default=3,
+        help="intervalo de atualizacao em segundos (1 a 60)",
+    )
+    serve.add_argument(
+        "--open",
+        dest="open_browser",
+        action="store_true",
+        help="abre o dashboard no navegador padrao",
+    )
+    serve.add_argument(
+        "--demo",
+        action="store_true",
+        help="popula um cenario de demonstracao quando o banco esta vazio",
+    )
+    serve.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="permite escutar fora do loopback (nao recomendado)",
+    )
+
     subparsers.add_parser("diagnostics", help="verifica ambiente, banco e agente")
     subparsers.add_parser("version", help="mostra versao e autor")
     subparsers.add_parser("shell", help="abre o shell interativo")

@@ -16,6 +16,8 @@
 | ADR-0012 | Stack da CLI e padrão de saída | Aceito |
 | ADR-0013 | Provisionamento offline da VM de laboratório | Aceito |
 | ADR-0014 | Runtime local de honeypots em Python no MVP | Aceito |
+| ADR-0015 | Runtime de honeypots em container na Fase 1 | Aceito |
+| ADR-0016 | Dashboard local somente leitura para demonstração | Aceito |
 
 Novas decisões devem seguir o formato: contexto, alternativas, decisão,
 justificativa, consequências, riscos e data.

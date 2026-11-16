@@ -1,7 +1,8 @@
 # Operação
 
-**Versão:** 0.2 (MVP local)
-**Estado:** CLI e runtime local implementados; firewall e container planejados.
+**Versão:** 0.4 (runtimes local/container e dashboard local)
+**Estado:** CLI, runtimes local/container e dashboard somente leitura implementados;
+firewall planejado.
 
 ## 1. Comandos disponíveis
 
@@ -21,6 +22,7 @@ sentineliot bans show <ip>
 sentineliot bans block|allow|ignore|reset <ip> [--note "motivo"]
 sentineliot bans export [--format json|csv] [--output ARQUIVO]
 sentineliot simulate [--ip IP]
+sentineliot serve [--host IP] [--port N] [--refresh S] [--open] [--demo]
 sentineliot diagnostics
 sentineliot version
 sentineliot shell
@@ -72,6 +74,29 @@ Instalação
 7. Iniciar o agente.
 8. Executar health check (`diagnostics`) e um evento de teste controlado.
 
+## 3.1. Runtime das iscas
+
+O runtime é escolhido por `honeypot.runtime`:
+
+- `local`: servidores-isca no processo do agente (padrão no Windows e no
+  desenvolvimento).
+- `docker`: uma isca por container, criada pelo agente via CLI do Docker, com
+  non-root, `cap_drop ALL`, `no-new-privileges`, read-only, limites de CPU/RAM/
+  PIDs, rede interna sem egress e sem `docker.sock`.
+
+Nos dois modos o spool é `data/spool/honeypot.jsonl` e o pipeline de coleta,
+SQLite e lista de ban é idêntico. Antes de iniciar com `runtime: docker`,
+confirme que o daemon está acessível (`diagnostics`) e construa a imagem:
+
+```bash
+docker build -f deploy/honeypot/Dockerfile -t sentineliot-honeypot:0.1.0 .
+```
+
+O agente reconcilia containers por rótulo (`sentineliot.managed=true`) a cada
+`sync` e remove órfãos em `stop`. O teste de isolamento está em
+`deploy/honeypot/README.md`. Detalhes de decisão em
+[ADR-0015](decisions/ADR-0015.md).
+
 ## 4. Status
 
 A saída de `status` mostra:
@@ -84,6 +109,30 @@ A saída de `status` mostra:
 - IPs observados, pendentes e resumo das decisões;
 - último evento;
 - iscas configuradas e se estão ativas.
+
+## 4.1. Dashboard local
+
+`sentineliot serve` sobe uma interface HTTP **somente leitura** em
+`http://127.0.0.1:8787/`. Ela reutiliza o mesmo banco, spool e runtime do agente:
+
+- quatro indicadores: eventos totais, últimas 24 h, IPs observados e pendentes;
+- fluxo de eventos com filtro por severidade, busca e detalhe dos metadados;
+- lista de IPs com decisão, contagem e última interação;
+- atividade por hora, distribuição por tipo e estado das iscas;
+- avisos de postura (modo, runtime local, agente parado).
+
+Não há endpoint de escrita. Decisões, configuração e firewall continuam
+exclusivamente na CLI. O servidor recusa `--host` fora do loopback sem
+`--allow-remote`, não usa autenticação e deve ser usado apenas no host local.
+
+Para uma demonstração sem tráfego real:
+
+```text
+sentineliot serve --demo --open
+```
+
+O seed só é aplicado quando o banco está vazio e não sobrescreve eventos
+existentes. Para dados reais, inicie o agente antes e use `serve` sem `--demo`.
 
 ## 5. Eventos
 

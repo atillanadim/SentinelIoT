@@ -1,12 +1,14 @@
 # Arquitetura do SentinelIoT
 
-**Versão:** 0.2 (MVP local)
-**Escopo:** arquitetura-alvo em container; o MVP local em Python é uma
-implementação de referência do mesmo contrato de eventos, spool e banco.
+**Versão:** 0.3 (runtimes local e em container)
+**Escopo:** arquitetura-alvo em container; o runtime local em Python e o runtime
+em container compartilham o mesmo contrato de eventos, spool e banco.
 
-> O MVP local descrito em [ADR-0014](decisions/ADR-0014.md) executa iscas HTTP,
-> SSH e Telnet diretamente no host, em loopback, sem Docker e sem firewall. O
-> runtime oficial continua sendo o da VM Linux com iscas em container.
+> O runtime local descrito em [ADR-0014](decisions/ADR-0014.md) executa iscas
+> HTTP, SSH e Telnet diretamente no host, em loopback, sem Docker e sem firewall.
+> O runtime em container ([ADR-0015](decisions/ADR-0015.md)) executa as mesmas
+> iscas isoladas, com o mesmo spool JSONL e a mesma lista de ban. Os dois são
+> selecionados por `honeypot.runtime` (`local` ou `docker`).
 
 ## 1. Contexto e limites
 
@@ -48,13 +50,14 @@ As decisões estão registradas em `docs/decisions/`.
 |---|---|---|
 | CLI | `cli/commands.py`, `cli/output.py` | Comandos locais, texto simples, confirmação e diagnóstico. |
 | Core | `core/agent.py`, `core/config.py`, `core/policy.py`, `core/lifecycle.py` | Orquestração, configuração validada, política e ciclo de vida. |
-| Honeypot | `honeypot/manager.py`, `honeypot/profiles/camera_simulator.py` | Lifecycle do container e perfil HTTP da câmera. |
+| Honeypot | `honeypot/manager.py`, `honeypot/docker_manager.py`, `honeypot/container.py`, `honeypot/profiles/catalog.py` | Lifecycle local ou em container e perfil HTTP da câmera. |
 | Events | `events/models.py`, `events/collector.py`, `events/normalizer.py` | Modelo, leitura do spool, validação e normalização. |
 | Firewall | `firewall/base.py`, `firewall/dry_run.py`, `firewall/linux_nftables.py`, `firewall/privileged_helper.py` | Interface, simulação, adaptador real e helper restrito. |
 | Notifications | `notifications/base.py`, `notifications/local.py` | Interface e notificação local. |
 | Storage | `storage/database.py`, `storage/repositories.py` | SQLite, schema, consultas, retenção e auditoria. |
 | Monitoring | `monitoring/health.py`, `monitoring/metrics.py` | Saúde, CPU, memória e latência. |
 | Security | `security/validation.py`, `security/secrets.py`, `security/audit.py` | IP/CIDR, redaction e auditoria. |
+| Web | `web/server.py`, `web/snapshot.py`, `web/demo.py`, `web/assets.py` | Dashboard local somente leitura, payloads JSON e cenário de demonstração. |
 
 ## 4. Topologia de execução
 

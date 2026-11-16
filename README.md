@@ -5,10 +5,16 @@ executa serviços-isca (honeypots) que simulam uma câmera IP, um roteador, um S
 corporativo e um dispositivo Telnet, registra interações suspeitas e monta uma
 lista de IPs para decisão do administrador.
 
-> **Status atual:** MVP funcional no host de desenvolvimento, com runtime local
-> em Python. O runtime oficial isolado em container na VM Linux continua
-> planejado para a Fase 1. Veja o
-> [ADR-0014](docs/decisions/ADR-0014.md).
+> **Status atual:** runtimes `local` (em processo, padrão no Windows) e `docker`
+> (iscas isoladas em container) implementados, com o mesmo spool JSONL, SQLite e
+> lista de ban. O dashboard local somente leitura (`serve`) está disponível para
+> demonstração e operação assistida. Veja [ADR-0014](docs/decisions/ADR-0014.md),
+> [ADR-0015](docs/decisions/ADR-0015.md) e [ADR-0016](docs/decisions/ADR-0016.md).
+> A homologação na VM Linux ainda precisa de evidências.
+
+![Dashboard local do SentinelIoT](docs/assets/dashboard.png)
+
+*Dashboard local somente leitura, restrito a loopback: `sentineliot serve --demo --open`.*
 
 ## Aviso de segurança
 
@@ -37,6 +43,12 @@ lista de IPs para decisão do administrador.
   `ignored` e `allowlisted`.
 - Exportação da lista em JSON e CSV.
 - Comando `simulate` para demonstrar o fluxo sem uma segunda máquina.
+- Runtime `docker` opcional: uma isca por container, sem root, com capabilities
+  removidas, filesystem somente leitura, limites de CPU/RAM/PIDs, rede interna
+  sem egress e sem `docker.sock`.
+- Dashboard local somente leitura (`serve`): eventos, IPs observados, atividade
+  por hora, tipos de evento, iscas e avisos de postura, com atualização
+  automática. Escuta apenas em loopback por padrão.
 
 ## O que o projeto não é
 
@@ -73,6 +85,30 @@ Em qualquer plataforma, o equivalente explícito é:
 ```bash
 PYTHONPATH=src uv run python -m sentineliot
 ```
+
+## Demonstração rápida (dashboard)
+
+Para mostrar o produto sem uma segunda máquina nem tráfego de rede:
+
+```powershell
+.\sentineliot.cmd serve --demo --open
+```
+
+O comando cria um cenário de demonstração **somente quando o banco está vazio**
+(12 interações, 5 IPs, iscas HTTP/SSH/Telnet e decisões de exemplo), sobe o
+dashboard em `http://127.0.0.1:8787/` e abre o navegador. Clique em um evento
+para ver os metadados coletados; a interface não tem botões de escrita.
+
+Para usar somente os dados reais já coletados:
+
+```powershell
+.\sentineliot.cmd start
+.\sentineliot.cmd serve --port 8787
+```
+
+Opções: `--port`, `--host`, `--refresh` (1 a 60 s), `--open`, `--demo` e
+`--allow-remote`. A última é recusada por padrão: a interface é local, sem
+autenticação, e não deve ser publicada na rede. Use `Ctrl+C` para encerrar.
 
 ## Fluxo de uso
 
@@ -153,6 +189,7 @@ não sonda a rede e não simula tráfego real.
 | `bans block/allow/ignore/reset <ip>` | registra uma decisão (`--note`) |
 | `bans export --format json\|csv` | exporta a lista de ban |
 | `simulate [--ip <ip>]` | gera interações de demonstração |
+| `serve [--demo] [--open]` | abre o dashboard local somente leitura |
 | `diagnostics` | verifica ambiente, banco, spool e agente |
 | `version` | mostra versão e autor |
 
@@ -172,7 +209,8 @@ As decisões são registradas e auditadas:
 
 O banco não armazena corpo de requisição, query string, senha ou payload. Os
 eventos guardam apenas metadados mínimos: horário, IP/porta de origem, isca,
-tipo, severidade, método, caminho, status HTTP e user-agent.
+tipo, severidade, método, caminho, status HTTP e user-agent. O dashboard lê os
+mesmos campos e não oferece edição, exclusão ou decisão.
 
 ## Configuração
 
@@ -185,8 +223,22 @@ O runtime procura `config/config.yaml` e, se não existir, usa
 ```
 
 Principais campos: `agent.mode`, `agent.poll_interval_seconds`,
-`agent.data_dir`, `honeypot.publish_host`, `honeypot.listen_port` e
-`allowlist`. Veja [docs/configuration.md](docs/configuration.md).
+`agent.data_dir`, `honeypot.publish_host`, `honeypot.listen_port`,
+`honeypot.runtime` (`local` ou `docker`) e `allowlist`. Veja
+[docs/configuration.md](docs/configuration.md).
+
+Para rodar as iscas em container:
+
+```powershell
+docker build -f deploy/honeypot/Dockerfile -t sentineliot-honeypot:0.1.0 .
+# em config/config.yaml: honeypot.runtime: docker
+.\sentineliot.cmd diagnostics
+.\sentineliot.cmd start
+```
+
+O isolamento (non-root, `cap_drop ALL`, read-only, limites, rede interna sem
+egress e sem `docker.sock`) e o teste de verificação estão em
+[deploy/honeypot/README.md](deploy/honeypot/README.md).
 
 ## Desenvolvimento
 
@@ -205,6 +257,7 @@ provisionado na VM Linux conforme [docs/lab.md](docs/lab.md) e
 
 ```text
 config/            configuração de exemplo
+deploy/honeypot/   Dockerfile, Compose e teste de isolamento da isca
 docs/              arquitetura, ameaças, operação, privacidade e ADRs
 scripts/           verificações e utilitários de laboratório
 src/sentineliot/   CLI, agentes, iscas, coleta e persistência

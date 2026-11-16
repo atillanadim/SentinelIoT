@@ -27,6 +27,7 @@ from sentineliot.core.errors import HoneypotError, SentinelError, StorageError
 from sentineliot.core.runtime import active_snapshot, pid_alive, read_runtime, remove_runtime
 from sentineliot.events.collector import CollectResult, EventCollector
 from sentineliot.events.models import Event, iso_utc, utc_now
+from sentineliot.honeypot.docker import DockerClient
 from sentineliot.honeypot.profiles import get_profile, list_profiles
 from sentineliot.honeypot.spool import SpoolWriter
 from sentineliot.honeypot.state import (
@@ -49,8 +50,13 @@ from sentineliot.storage.database import (
     StoredEvent,
     SuspectRepository,
 )
+from sentineliot.web.demo import seed_demo
+from sentineliot.web.server import DashboardServer
+from sentineliot.web.snapshot import WebDataService
 
 DAEMON_START_TIMEOUT = 10.0
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+DASHBOARD_REFRESH_RANGE = (1, 60)
 
 
 @contextmanager
@@ -134,6 +140,7 @@ def cmd_status(ctx: CommandContext) -> int:
             ("versao", f"{__version__} (autor: {__author__})"),
             ("config", str(ctx.config.source_path or "padroes internos")),
             ("modo", ctx.config.mode),
+            ("runtime", ctx.config.honeypot.runtime),
             ("firewall", f"{ctx.config.firewall.adapter} (nenhuma regra real e aplicada)"),
             ("agente", agent_state),
             ("banco", str(ctx.paths.database)),
@@ -779,6 +786,17 @@ def cmd_simulate(ctx: CommandContext, *, source_ip: str = "10.10.10.66") -> int:
     return 0
 
 
+def _runtime_check(ctx: CommandContext) -> list[str]:
+    honeypot = ctx.config.honeypot
+    if honeypot.runtime != "docker":
+        return ["runtime de honeypot", "ok", "local (em processo)"]
+    available = DockerClient().available()
+    detail = f"docker | imagem={honeypot.image} | rede={honeypot.network}"
+    if not available:
+        detail = "docker indisponivel (CLI ou daemon ausente)"
+    return ["runtime de honeypot", "ok" if available else "alerta", detail]
+
+
 def cmd_diagnostics(ctx: CommandContext) -> int:
     ctx.console.title("Diagnostico")
     checks: list[list[str]] = []
@@ -831,6 +849,7 @@ def cmd_diagnostics(ctx: CommandContext) -> int:
         ]
     )
     checks.append(["perfis de honeypot", "ok", f"{len(list_profiles())} disponiveis"])
+    checks.append(_runtime_check(ctx))
     checks.append(
         [
             "allowlist",
@@ -857,6 +876,47 @@ def cmd_version(ctx: CommandContext) -> int:
     return 0
 
 
+def cmd_serve(
+    ctx: CommandContext,
+    *,
+    host: str = "127.0.0.1",
+    port: int = 8787,
+    refresh: int = 3,
+    open_browser: bool = False,
+    demo: bool = False,
+    allow_remote: bool = False,
+) -> int:
+    selected_host = host.strip() or "127.0.0.1"
+    if selected_host not in LOOPBACK_HOSTS and not allow_remote:
+        raise SentinelError(
+            "o dashboard escuta apenas em loopback por padrao "
+            f"({', '.join(sorted(LOOPBACK_HOSTS))}). Use --allow-remote somente em "
+            "rede isolada e autorizada."
+        )
+    selected_port = validate_port(port)
+    minimum, maximum = DASHBOARD_REFRESH_RANGE
+    refresh_seconds = max(minimum, min(maximum, refresh))
+
+    if demo:
+        created = seed_demo(ctx.config, ctx.paths)
+        if created:
+            ctx.console.success(
+                f"cenario de demonstracao criado ({created} evento(s)) em {ctx.paths.database}"
+            )
+        else:
+            ctx.console.info("banco ja contem eventos; cenario de demonstracao preservado")
+
+    ctx.console.title("Dashboard local")
+    service = WebDataService(ctx.config, ctx.paths)
+    server = DashboardServer(
+        service,
+        host=selected_host,
+        port=selected_port,
+        refresh_seconds=refresh_seconds,
+    )
+    return server.run(open_browser=open_browser)
+
+
 def dispatch(args: argparse.Namespace, ctx: CommandContext) -> int:
     command = getattr(args, "command", None)
     if command == "start":
@@ -875,6 +935,16 @@ def dispatch(args: argparse.Namespace, ctx: CommandContext) -> int:
         return cmd_version(ctx)
     if command == "simulate":
         return cmd_simulate(ctx, source_ip=str(getattr(args, "ip", "10.10.10.66")))
+    if command in {"serve", "web", "dashboard"}:
+        return cmd_serve(
+            ctx,
+            host=str(getattr(args, "host", "127.0.0.1")),
+            port=int(getattr(args, "port", 8787)),
+            refresh=int(getattr(args, "refresh", 3)),
+            open_browser=bool(getattr(args, "open_browser", False)),
+            demo=bool(getattr(args, "demo", False)),
+            allow_remote=bool(getattr(args, "allow_remote", False)),
+        )
     if command == "diagnostics":
         return cmd_diagnostics(ctx)
 

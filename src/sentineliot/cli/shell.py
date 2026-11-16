@@ -34,6 +34,7 @@ HELP_TEXT = """Comandos disponiveis:
   bans reset <ip>             volta para pendente
   bans export [--format]      exporta a lista em json ou csv
   simulate                    grava interacoes de demonstracao
+  serve [--demo] [--open]     abre o dashboard local (fora do shell)
   diagnostics                 checa ambiente, banco, spool e agente
   version                     versao e autor
   banner                      mostra o banner novamente
@@ -105,7 +106,7 @@ class SentinelShell(cmd.Cmd):
         tokens = line.strip().split()
         if not tokens:
             return
-        blocked = {"shell", "daemon"}
+        blocked = {"shell", "daemon", "serve", "web", "dashboard"}
         if tokens[0] in blocked:
             self.context.console.warn(f"'{tokens[0]}' nao pode ser executado dentro do shell")
             return

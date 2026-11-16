@@ -235,6 +235,7 @@ class EventRepository:
         limit: int = 20,
         source_ip: str | None = None,
         event_type: str | None = None,
+        severity: str | None = None,
     ) -> list[StoredEvent]:
         clauses: list[str] = []
         params: list[object] = []
@@ -244,6 +245,9 @@ class EventRepository:
         if event_type:
             clauses.append("event_type = ?")
             params.append(event_type)
+        if severity:
+            clauses.append("severity = ?")
+            params.append(severity)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         params.append(max(1, min(limit, 1000)))
         rows = self.database.connection.execute(
@@ -281,6 +285,34 @@ class EventRepository:
 
     def events_for_ip(self, source_ip: str, limit: int = 20) -> list[StoredEvent]:
         return self.list_events(limit=limit, source_ip=source_ip)
+
+    def severity_counts(self) -> dict[str, int]:
+        rows = self.database.connection.execute(
+            "SELECT severity, COUNT(*) AS total FROM events GROUP BY severity"
+        ).fetchall()
+        return {str(row["severity"]): int(row["total"]) for row in rows}
+
+    def type_counts(self, limit: int = 8) -> dict[str, int]:
+        rows = self.database.connection.execute(
+            """
+            SELECT event_type, COUNT(*) AS total FROM events
+            GROUP BY event_type ORDER BY total DESC, event_type ASC LIMIT ?
+            """,
+            (max(1, min(limit, 50)),),
+        ).fetchall()
+        return {str(row["event_type"]): int(row["total"]) for row in rows}
+
+    def hourly_counts(self, since: datetime) -> dict[str, int]:
+        """Contagem por hora UTC no formato usado pelo dashboard."""
+        rows = self.database.connection.execute(
+            """
+            SELECT substr(timestamp_utc, 1, 13) AS hour, COUNT(*) AS total
+            FROM events WHERE timestamp_utc >= ?
+            GROUP BY hour ORDER BY hour
+            """,
+            (iso_utc(since),),
+        ).fetchall()
+        return {str(row["hour"]): int(row["total"]) for row in rows}
 
     def prune(self, retention_days: int) -> int:
         cutoff = iso_utc(utc_now() - timedelta(days=retention_days))
