@@ -18,13 +18,16 @@ honeypot:
   profile: camera-http
   listen_port: 8080
   publish_host: "127.0.0.1"   # no laboratorio Linux, usar o IP host-only da VM
-  # Campos reservados ao runtime em container (Fase 1):
-  container_name: sentineliot-camera-01
+  # Runtime das iscas: local (em processo) ou docker (container isolado).
+  runtime: local
+  # Campos do runtime em container (Fase 1), usados quando runtime: docker.
   image: sentineliot-honeypot:0.1.0
+  network: sentineliot-lab
   cpu_limit: "0.25"
   memory_limit: "128m"
   pids_limit: 64
   read_only: true
+  container_user: ""          # vazio = UID/GID do agente no Linux (nao-root)
 
 detection:
   event_retention_days: 90

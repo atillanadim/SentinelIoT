@@ -36,7 +36,8 @@ em ambiente de terceiros.
 - Rede doméstica de produção `192.168.1.0/24`.
 - Dispositivos IoT reais.
 - Redes de terceiros.
-- Internet a partir da VM de laboratório.
+- Internet a partir da VM de laboratório (exceto a janela de provisionamento
+  da emenda de 2026-11-09, seção 9).
 - Varredura de portas em ativos não listados.
 - Exploração de vulnerabilidades reais.
 - Captura de credenciais reais.
@@ -95,3 +96,89 @@ segurança.
 | 2026-11-08 | Snapshot com toolchain (`toolchain-ready`) | Sora | Concluído | `VBoxManage snapshot list` |
 | 2026-11-08 | Restauração de `clean-os` | Sora | Concluído | Sem Docker, uv, Python 3.11 ou projeto |
 | 2026-11-08 | Restauração de `toolchain-ready` | Sora | Concluído | `pytest` 1 passed; `ruff`; `mypy`; `hello-world` |
+
+## 9. Emenda 2026-11-09 — laboratório de pentest
+
+Autorização adicional registrada em conversa com o responsável:
+
+- **Novo escopo de rede:** `10.10.10.0/24` (LAB-LAN), `203.0.113.0/24`
+  (LAB-WAN) e `192.168.57.0/24` (gerência host-only).
+- **Alvo autorizado:** `10.10.10.10` (VM `sentinel-mint`, honeypot Docker).
+  Nenhum outro endereço pode ser atacado.
+- **Atacante autorizado:** VM `kali`, endereços `10.10.10.20` e
+  `203.0.113.20`.
+- **Testes autorizados:** reconhecimento com `nmap`, enumeração HTTP,
+  tentativas controladas de login, tentativas de injeção contra o honeypot e
+  demonstração de detecção/bloqueio pelo agente Sentinel.
+- **Internet temporária:** autorizada via NIC4 em NAT no `sentinel-router`
+  apenas para instalar pacotes e imagens. Deve ser desligada antes dos testes
+  ofensivos. O roteador bloqueia `10.0.0.0/8`, `192.168.0.0/16`,
+  `172.16.0.0/12` e `169.254.0.0/16` no forward, com exceção de
+  `10.0.2.0/24` (gateway/DNS do NAT), impedindo acesso à rede real
+  `192.168.1.0/24`.
+- **Dados:** apenas metadados; senhas, corpos, query strings e payloads não
+  são persistidos.
+- **Interrupção:** desligar as VMs, desconectar a NIC4 (`setlinkstate4 off`) e
+  restaurar o snapshot do laboratório.
+- **Proibição mantida:** bridge para a rede doméstica e qualquer ataque fora de
+  `10.10.10.0/24`.
+
+- Nome: Sora
+- Data: 2026-11-09
+- Assinatura: ______________________ (pendente)
+
+## 10. Emenda 2026-11-10 — honeypot de câmera IP + bloqueio no router
+
+Autorização registrada em conversa com o responsável, seguindo o
+`SentinelIoT_Lab_Guia_Agente.md` com OpenWrt 25.12.6.
+
+- **Topologia (redes internas do VirtualBox, sem bridge):**
+  - `lab-servidores` = `192.168.57.0/24` (LAN do router);
+  - `lab-atacante` = `192.168.58.0/24` (WAN do router).
+- **VMs autorizadas:** `router` (OpenWrt), `alvoDebian` (honeypot + agente) e
+  `kali-linux-2025.4-virtualbox-amd64` (atacante).
+- **Endereços:** router `192.168.57.1` (LAN) e `192.168.58.1` (WAN); Debian
+  `192.168.57.10`; Kali `192.168.58.50`; IP de admin protegido `192.168.58.2`.
+- **Portas do honeypot:** `23/tcp`, `80/tcp` e `554/tcp`, alcançáveis apenas a
+  partir de `lab-atacante` através da regra de firewall
+  `Atacante-para-honeypot`.
+- **SSH:** Dropbear do router apenas na LAN (`192.168.57.1:22`, confirmado sem
+  bind na WAN); SSH do Debian apenas em `lab-servidores`.
+- **Bloqueio:** tabela nftables própria `inet sentinel`, nunca as regras do
+  `fw4`, TTL padrão `900` s, escopo `192.168.58.0/24`, allowlist
+  `192.168.58.1/32`, `192.168.58.2/32` e `192.168.57.0/24`, limite de 50
+  bloqueios ativos. O agente inicia em `mode = "observe"`.
+- **Fora de escopo:** `192.168.1.0/24` (rede doméstica), Internet a partir das
+  VMs do lab, bridge para a rede física, câmeras e dispositivos reais.
+- **NICs em bridge:** as NICs em bridge existentes (`router` NIC3 e
+  `alvoDebian` NIC2, além da NIC2 do Kali) foram **desligadas**
+  (`cableconnected off`) em 2026-11-10 e devem permanecer desligadas. Modo
+  promíscuo = `deny` em todas as NICs do lab.
+- **Consola do router:** o OpenWrt arranca com `ttylogin=0`, ou seja, acesso
+  físico à janela da VM dá shell de root sem password. O isolamento depende de
+  esse acesso ficar restrito ao host.
+- **Snapshot:** `openwrt-base`, UUID `9bcb10c3-f87b-450e-ac10-ff200a50fffb`,
+  tirado com o router desligado após a configuração do router (Parte 4 do
+  guia). Reversão: `VBoxManage snapshot router restore openwrt-base`.
+- **Interrupção:** desligar as VMs (`VBoxManage controlvm <vm> acpipowerbutton`),
+  manter as NICs bridge desligadas e, se necessário, restaurar o snapshot.
+- **Proibição mantida:** qualquer ataque fora de `192.168.58.0/24` e
+  `192.168.57.0/24`, e qualquer tráfego para a rede real `192.168.1.0/24`.
+- **Credenciais:** a password de root do OpenWrt não é versionada; deve ser
+  guardada fora do repositório.
+
+Evidência da configuração do router (verificações reais por consola série):
+
+| Verificação | Comando | Resultado |
+|---|---|---|
+| LAN | `ip -o -4 a` | `br-lan 192.168.57.1/24` |
+| WAN | `ip -o -4 a` | `eth1 192.168.58.1/24` |
+| Rota padrão | `ip route` | ausente |
+| SSH só na LAN | `netstat -lntp \| grep :22` | apenas `192.168.57.1:22` |
+| Regra do honeypot | `nft list ruleset \| grep honeypot` | `ip daddr 192.168.57.10 tcp dport { 23, 80, 554 } jump accept_to_lan` |
+| Regras pré-existentes | `uci show firewall` | 9 antes, 10 depois (só a nova) |
+| Persistência | reboot + repetir | tudo mantido |
+
+- Nome: Sora
+- Data: 2026-11-10
+- Assinatura: ______________________ (pendente)

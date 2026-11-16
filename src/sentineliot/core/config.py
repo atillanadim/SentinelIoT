@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,6 +17,10 @@ from sentineliot.security.validation import validate_cidr, validate_ip, validate
 VALID_MODES = ("observe", "dry_run", "enforce")
 VALID_ADAPTERS = ("dry_run", "nftables")
 VALID_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
+VALID_HONEYPOT_RUNTIMES = ("local", "docker")
+DOCKER_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$")
+DOCKER_MEMORY_RE = re.compile(r"^[0-9]+[bkmgBKMG]?$")
+DOCKER_USER_RE = re.compile(r"^[0-9]+(:[0-9]+)?$")
 
 DEFAULT_ALLOWLIST = ("127.0.0.1/32", "::1/128")
 
@@ -81,9 +86,16 @@ class AgentSettings:
 class HoneypotSettings:
     enabled: bool = True
     profile: str = "camera-http"
-    container_name: str = "sentineliot-camera-01"
     listen_port: int = 8080
     publish_host: str = "127.0.0.1"
+    runtime: str = "local"
+    image: str = "sentineliot-honeypot:0.1.0"
+    network: str = "sentineliot-lab"
+    cpu_limit: str = "0.25"
+    memory_limit: str = "128m"
+    pids_limit: int = 64
+    read_only: bool = True
+    container_user: str = ""
 
 
 @dataclass(frozen=True)
@@ -177,9 +189,16 @@ def load_config(path: Path | None = None) -> Config:
     honeypot = HoneypotSettings(
         enabled=_boolean(honeypot_raw, "enabled", True),
         profile=_text(honeypot_raw, "profile", "camera-http"),
-        container_name=_text(honeypot_raw, "container_name", "sentineliot-camera-01"),
         listen_port=_integer(honeypot_raw, "listen_port", 8080),
         publish_host=_text(honeypot_raw, "publish_host", "127.0.0.1"),
+        runtime=_text(honeypot_raw, "runtime", "local").lower(),
+        image=_text(honeypot_raw, "image", "sentineliot-honeypot:0.1.0"),
+        network=_text(honeypot_raw, "network", "sentineliot-lab"),
+        cpu_limit=_text(honeypot_raw, "cpu_limit", "0.25"),
+        memory_limit=_text(honeypot_raw, "memory_limit", "128m"),
+        pids_limit=_integer(honeypot_raw, "pids_limit", 64),
+        read_only=_boolean(honeypot_raw, "read_only", True),
+        container_user=_text(honeypot_raw, "container_user", ""),
     )
     detection = DetectionSettings(
         event_retention_days=_integer(detection_raw, "event_retention_days", 90),
@@ -240,6 +259,7 @@ def _validate(config: Config) -> None:
 
     validate_port(config.honeypot.listen_port)
     validate_ip(config.honeypot.publish_host)
+    _validate_honeypot_runtime(config.honeypot)
 
     if config.detection.event_retention_days < 1:
         raise ConfigurationError("detection.event_retention_days deve ser >= 1")
@@ -266,4 +286,35 @@ def _validate(config: Config) -> None:
     if config.firewall.adapter == "nftables" and not config.firewall.enforce_enabled:
         raise ConfigurationError(
             "firewall.adapter=nftables exige firewall.enforce_enabled=true apos homologacao"
+        )
+
+
+def _validate_honeypot_runtime(honeypot: HoneypotSettings) -> None:
+    if honeypot.runtime not in VALID_HONEYPOT_RUNTIMES:
+        raise ConfigurationError(
+            f"honeypot.runtime invalido: {honeypot.runtime}. "
+            f"Use {' ou '.join(VALID_HONEYPOT_RUNTIMES)}"
+        )
+    if honeypot.runtime != "docker":
+        return
+    if not honeypot.image:
+        raise ConfigurationError("honeypot.image e obrigatorio no runtime docker")
+    if not DOCKER_NAME_RE.fullmatch(honeypot.network):
+        raise ConfigurationError(
+            "honeypot.network invalido: use ate 63 caracteres [A-Za-z0-9_.-], "
+            "comecando por letra ou numero"
+        )
+    try:
+        cpus = float(honeypot.cpu_limit)
+    except ValueError as exc:
+        raise ConfigurationError("honeypot.cpu_limit deve ser um numero") from exc
+    if cpus <= 0:
+        raise ConfigurationError("honeypot.cpu_limit deve ser maior que zero")
+    if not DOCKER_MEMORY_RE.fullmatch(honeypot.memory_limit):
+        raise ConfigurationError("honeypot.memory_limit invalido: use algo como 128m ou 1g")
+    if honeypot.pids_limit < 1:
+        raise ConfigurationError("honeypot.pids_limit deve ser >= 1")
+    if honeypot.container_user and not DOCKER_USER_RE.fullmatch(honeypot.container_user):
+        raise ConfigurationError(
+            "honeypot.container_user invalido: use UID ou UID:GID numericos"
         )

@@ -1,0 +1,11 @@
+{
+  "mode": "observe",
+  "block_seconds": 300,
+  "threshold": 5,
+  "window_seconds": 120,
+  "max_active_blocks": 20,
+  "spool": "/var/log/sentinel/honeypot.jsonl",
+  "access_log": "/var/log/sentinel/apache/sentinel-access.log",
+  "database": "/var/lib/sentinel/sentinel.db",
+  "log": "/var/log/sentinel/agent.log"
+}

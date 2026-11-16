@@ -1,0 +1,18 @@
+[Unit]
+Description=SentinelIoT lab honeypot agent
+Documentation=file:/opt/sentinel/sentinel_agent.py
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /opt/sentinel/sentinel_agent.py run
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

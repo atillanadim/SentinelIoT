@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+__pycache__
+*.pyc
+*.pyo
+data
+logs
+tests
+docs
+scripts
+Especificacao_Mestra_Implementacao_SentinelIoT.md

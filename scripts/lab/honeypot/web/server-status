@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>SentinelCam - Status</title></head>
+<body style="font-family:monospace;background:#0d1117;color:#e6edf3;padding:20px">
+<h1>SentinelCam - Diagnóstico</h1>
+<pre>
+device............: SC-IPC-01
+firmware..........: 1.4.2
+uptime............: 42 days, 07:13:55
+network...........: 10.10.10.10/24
+gateway...........: 10.10.10.1
+rtsp..............: 554 (closed)
+http..............: 80 (open)
+storage...........: 71% used
+users.............: admin, operator
+last_login........: 2026-01-14 03:22:11
+</pre>
+<p><a href="/" style="color:#58a6ff">Voltar</a></p>
+</body>
+</html>

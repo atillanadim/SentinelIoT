@@ -1,0 +1,49 @@
+# SentinelIoT - isca isolada em Docker (Fase 1).
+#
+# Alternativa manual ao gerenciamento feito pelo agente (`honeypot.runtime:
+# docker`). O agente cria os containers com os mesmos limites de isolamento.
+#
+# Subir:   docker compose -f deploy/honeypot/docker-compose.yml up -d --build
+# Logs:    docker compose -f deploy/honeypot/docker-compose.yml logs -f
+# Parar:   docker compose -f deploy/honeypot/docker-compose.yml down
+#
+# Ajuste a porta publicada para o IP host-only da VM de laboratorio
+# (ex.: "192.168.57.10:8080:8080") em vez de loopback.
+
+services:
+  honeypot:
+    build:
+      context: ../..
+      dockerfile: deploy/honeypot/Dockerfile
+    image: sentineliot-honeypot:0.1.0
+    container_name: sentineliot-camera-01
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.25
+    environment:
+      SENTINELIOT_HONEYPOT_ID: camera-01
+      SENTINELIOT_HONEYPOT_PROFILE: camera-http
+      SENTINELIOT_HONEYPOT_PORT: "8080"
+      SENTINELIOT_SPOOL_FILE: /spool/honeypot.jsonl
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Mesmo spool JSONL lido pelo agente no host.
+      - ../../data/spool:/spool
+    networks:
+      - internal
+    restart: unless-stopped
+
+networks:
+  internal:
+    name: sentineliot-lab
+    driver: bridge
+    # Rede interna: sem egress para a Internet ou para outras redes.
+    internal: true

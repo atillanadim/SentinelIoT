@@ -1,5 +1,8 @@
 # Laboratório isolado
 
+> O laboratório de pentest da rede doméstica simulada (OpenWrt + Mint + Kali)
+> está documentado em [`docs/lab-pentest.md`](lab-pentest.md).
+
 **Versão:** 1.0 (laboratório provisionado)
 **Estado:** VM `sentinel-lab` provisionada e isolada; snapshots `clean-os` e
 `toolchain-ready` criados, com restauração testada.

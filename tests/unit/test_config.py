@@ -87,3 +87,50 @@ def test_invalid_allowlist_raises(tmp_path: Path) -> None:
     path = _write(tmp_path / "bad.yaml", "allowlist:\n  - not-a-network\n")
     with pytest.raises(ConfigurationError, match="IP/CIDR invalido"):
         load_config(path)
+
+
+def test_docker_runtime_is_parsed(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "docker.yaml",
+        """
+honeypot:
+  runtime: docker
+  image: sentineliot-honeypot:test
+  network: sentineliot-lab
+  cpu_limit: "0.5"
+  memory_limit: 256m
+  pids_limit: 32
+  read_only: true
+  container_user: "1000:1000"
+""",
+    )
+
+    config = load_config(path)
+
+    assert config.honeypot.runtime == "docker"
+    assert config.honeypot.image == "sentineliot-honeypot:test"
+    assert config.honeypot.memory_limit == "256m"
+    assert config.honeypot.pids_limit == 32
+    assert config.honeypot.container_user == "1000:1000"
+
+
+def test_invalid_runtime_raises(tmp_path: Path) -> None:
+    path = _write(tmp_path / "bad.yaml", "honeypot:\n  runtime: kubernetes\n")
+    with pytest.raises(ConfigurationError, match="honeypot.runtime"):
+        load_config(path)
+
+
+@pytest.mark.parametrize(
+    ("snippet", "match"),
+    [
+        ("runtime: docker\n  cpu_limit: zero", "cpu_limit"),
+        ("runtime: docker\n  memory_limit: many", "memory_limit"),
+        ("runtime: docker\n  pids_limit: 0", "pids_limit"),
+        ("runtime: docker\n  network: 'bad network'", "network"),
+        ("runtime: docker\n  container_user: root", "container_user"),
+    ],
+)
+def test_invalid_docker_settings_raise(tmp_path: Path, snippet: str, match: str) -> None:
+    path = _write(tmp_path / "bad.yaml", f"honeypot:\n  {snippet}\n")
+    with pytest.raises(ConfigurationError, match=match):
+        load_config(path)

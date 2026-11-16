@@ -1,6 +1,6 @@
 # Configuração
 
-**Versão:** 0.2 (MVP local)
+**Versão:** 0.3 (runtime local e em container)
 **Estado:** carregamento e validação implementados; schema evolui com o runtime.
 
 ## 1. Princípios
@@ -44,19 +44,23 @@
 |---|---|---|---|
 | `enabled` | bool | `true` | Se falso, nenhuma isca é criada por padrão. |
 | `profile` | string | `camera-http` | `camera-http`, `router-admin`, `ssh-banner` ou `telnet-iot`. |
-| `container_name` | string | `sentineliot-camera-01` | Reservado ao runtime em container. |
-| `image` | string | `sentineliot-honeypot:0.1.0` | Reservado ao runtime em container. |
 | `listen_port` | int | `8080` | Porta de laboratório; validar disponibilidade. |
 | `publish_host` | IP | `127.0.0.1` | No laboratório, usar o IP host-only da VM. |
-| `cpu_limit` | string | `0.25` | Reservado ao runtime em container. |
-| `memory_limit` | string | `128m` | Reservado ao runtime em container. |
-| `pids_limit` | int | `64` | Reservado ao runtime em container. |
-| `read_only` | bool | `true` | Reservado ao runtime em container. |
+| `runtime` | string | `local` | `local` (em processo) ou `docker` (container isolado). |
+| `image` | string | `sentineliot-honeypot:0.1.0` | Imagem usada quando `runtime: docker`. |
+| `network` | string | `sentineliot-lab` | Rede Docker interna (sem egress) criada pelo agente. |
+| `cpu_limit` | string | `0.25` | Limite de CPU do container; deve ser > 0. |
+| `memory_limit` | string | `128m` | Limite de memória do container (`128m`, `1g`, ...). |
+| `pids_limit` | int | `64` | Limite de processos do container; deve ser >= 1. |
+| `read_only` | bool | `true` | Filesystem do container somente leitura (`/tmp` em tmpfs). |
+| `container_user` | string | `` (vazio) | UID ou UID:GID do container; vazio = UID/GID do agente no Linux. |
 
-O MVP local usa apenas `enabled`, `profile`, `listen_port` e `publish_host`.
-Aliases legados de `profile` (`camera_simulator`, `camera`, `router`, `ssh`,
-`telnet`) são convertidos para o identificador novo ao carregar o estado das
-iscas.
+O runtime `local` executa as iscas no próprio processo do agente. O runtime
+`docker` cria containers sem root, com `cap_drop ALL`, `no-new-privileges`,
+limites de CPU/RAM/PIDs, rede interna e sem `docker.sock`, escrevendo o mesmo
+spool JSONL em `data/spool`. Aliases legados de `profile`
+(`camera_simulator`, `camera`, `router`, `ssh`, `telnet`) são convertidos para o
+identificador novo ao carregar o estado das iscas.
 
 ### detection
 
@@ -102,6 +106,9 @@ administrativo do laboratório.
   allowlist ou em faixa protegida.
 - O container não pode publicar em `0.0.0.0` por padrão; usar loopback no
   desenvolvimento e IP host-only no laboratório.
+- Com `runtime: docker`, `image`, `network`, `cpu_limit`, `memory_limit`,
+  `pids_limit` e `container_user` são validados; valores inválidos rejeitam a
+  configuração.
 - Configuração inválida não pode resultar em bloqueio.
 
 ## 5. Exemplo mínimo
@@ -167,3 +174,18 @@ O diretório de dados pode ser alterado por `agent.data_dir`, pela opção
 `SENTINELIOT_LOG_DIR` altera o diretório do log do agente.
 
 Nenhuma configuração atual deve ser considerada homologada para produção.
+
+## 8. Runtime das iscas
+
+A chave `honeypot.runtime` escolhe a implementação sem alterar o restante do
+pipeline:
+
+- `local`: servidores-isca no processo do agente (loopback por padrão).
+- `docker`: uma isca por container, criada pelo agente via CLI do Docker, com
+  isolamento (non-root, `cap_drop ALL`, `no-new-privileges`, read-only, limites
+  de CPU/RAM/PIDs, rede interna sem egress e sem `docker.sock`).
+
+Nos dois casos o evento sai pelo mesmo spool JSONL (`data/spool/honeypot.jsonl`)
+e entra no mesmo SQLite e lista de ban. O comando `diagnostics` informa o runtime
+ativo e, no modo `docker`, se o CLI/daemon do Docker está acessível. A construção
+da imagem e o teste de isolamento estão em `deploy/honeypot/`.

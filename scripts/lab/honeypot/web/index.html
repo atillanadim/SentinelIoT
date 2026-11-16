@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelCam Home Hub</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
+    header { background: #161b22; padding: 18px 24px; border-bottom: 1px solid #30363d; }
+    main { max-width: 900px; margin: 0 auto; padding: 24px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; margin: 14px 0; }
+    a { color: #58a6ff; }
+    code { background: #21262d; padding: 2px 6px; border-radius: 4px; }
+    .tag { display: inline-block; background: #1f6feb33; color: #79c0ff; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>SentinelCam Home Hub</strong>
+    <span class="tag">firmware 1.4.2</span>
+  </header>
+  <main>
+    <div class="card">
+      <h1>Central da câmera</h1>
+      <p>Dispositivo de demonstração do laboratório SentinelIoT. Este host simula
+      uma câmera IP doméstica e apresenta superfícies típicas de ataque.</p>
+    </div>
+    <div class="card">
+      <h2>Serviços</h2>
+      <ul>
+        <li><a href="/admin/">Painel administrativo</a> - login do operador</li>
+        <li><a href="/camera/">Configuração da câmera</a> - rede, vídeo e usuários</li>
+        <li><a href="/api/">API do dispositivo</a> - endpoints JSON</li>
+        <li><a href="/server-status">Diagnóstico</a> - status interno (simulado)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Informações do dispositivo</h2>
+      <p>Modelo: <code>SC-IPC-01</code> | Serial: <code>LAB-0001</code> |
+      Endereço: <code>10.10.10.10</code></p>
+      <p>Serviços publicados: HTTP/80, API/80, administração/80.</p>
+    </div>
+  </main>
+</body>
+</html>

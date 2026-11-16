@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>SentinelCam - Administração</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3;
+           display: flex; min-height: 100vh; align-items: center; justify-content: center; }
+    form { background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+           padding: 28px; width: 320px; }
+    input { width: 100%; box-sizing: border-box; margin: 8px 0 14px; padding: 10px;
+            background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; }
+    button { width: 100%; padding: 10px; background: #238636; color: #fff;
+             border: 0; border-radius: 6px; font-weight: 600; }
+    small { color: #8b949e; }
+  </style>
+</head>
+<body>
+  <form method="post" action="/cgi-bin/sentinel_login.py">
+    <h2>Administração da câmera</h2>
+    <input type="hidden" name="honeypot" value="admin-portal">
+    <label for="username">Usuário</label>
+    <input id="username" name="username" autocomplete="off" placeholder="admin">
+    <label for="password">Senha</label>
+    <input id="password" name="password" type="password" autocomplete="off" placeholder="********">
+    <button type="submit">Entrar</button>
+    <p><small>Firmware 1.4.2 - acesso restrito ao operador.</small></p>
+  </form>
+</body>
+</html>

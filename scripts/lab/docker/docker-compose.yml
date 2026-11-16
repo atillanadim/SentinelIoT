@@ -1,0 +1,33 @@
+# SentinelIoT - honeypot Apache no Docker
+#
+# O container publica a porta 80 e grava os logs em /var/log/sentinel,
+# que e um bind mount do host. O agente Sentinel roda FORA do container,
+# no proprio Mint, e le esses mesmos arquivos.
+#
+# Subir:    docker compose up -d --build
+# Logs:     docker compose logs -f
+# Parar:    docker compose down
+
+services:
+  honeypot:
+    build:
+      context: ..
+      dockerfile: docker/honeypot/Dockerfile
+    image: sentinel/honeypot-camera:lab
+    container_name: sentinel-honeypot
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      # Logs compartilhados entre o Apache (container) e o agente (host).
+      - /var/log/sentinel:/var/log/sentinel
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1/', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3

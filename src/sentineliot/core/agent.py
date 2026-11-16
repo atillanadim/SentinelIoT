@@ -14,7 +14,7 @@ from sentineliot.core.errors import HoneypotError
 from sentineliot.core.paths import RuntimePaths
 from sentineliot.core.runtime import new_snapshot, remove_runtime, write_runtime
 from sentineliot.events.collector import EventCollector
-from sentineliot.honeypot.manager import HoneypotManager
+from sentineliot.honeypot.manager import HoneypotRuntime, create_honeypot_runtime
 from sentineliot.honeypot.spool import SpoolWriter
 from sentineliot.honeypot.state import load_instances
 from sentineliot.storage.database import Database
@@ -49,7 +49,7 @@ class AgentRuntime:
         configure_logging(self.paths.log_file, self.console)
         database = Database(self.paths.database)
         writer = SpoolWriter(self.paths.spool_file)
-        manager = HoneypotManager(writer)
+        manager = create_honeypot_runtime(self.config, self.paths, writer)
         collector = EventCollector(database, self.paths.spool_file, self.config.allowlist)
         self._install_signal_handlers()
 
@@ -98,7 +98,7 @@ class AgentRuntime:
 
     def _loop(
         self,
-        manager: HoneypotManager,
+        manager: HoneypotRuntime,
         collector: EventCollector,
         database: Database,
     ) -> None:

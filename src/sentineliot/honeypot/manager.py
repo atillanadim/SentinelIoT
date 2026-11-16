@@ -1,16 +1,41 @@
-"""Ciclo de vida das iscas em memoria."""
+"""Ciclo de vida das iscas em memoria e selecao do runtime."""
 
 from __future__ import annotations
 
 import logging
+from typing import Protocol
 
+from sentineliot.core.config import Config
 from sentineliot.core.errors import HoneypotError
+from sentineliot.core.paths import RuntimePaths
+from sentineliot.honeypot.docker_manager import DockerHoneypotManager
 from sentineliot.honeypot.profiles import get_profile
 from sentineliot.honeypot.servers import RunningHoneypot, ServerHandle, build_server
 from sentineliot.honeypot.spool import SpoolWriter
 from sentineliot.honeypot.state import HoneypotInstance
 
 LOGGER = logging.getLogger("sentineliot.honeypot")
+
+
+class HoneypotRuntime(Protocol):
+    """Contrato comum aos runtimes local (em processo) e Docker (container)."""
+
+    def sync(self, instances: list[HoneypotInstance]) -> list[str]: ...
+
+    def running(self) -> list[RunningHoneypot]: ...
+
+    def running_ids(self) -> set[str]: ...
+
+    def stop_all(self) -> None: ...
+
+
+def create_honeypot_runtime(
+    config: Config, paths: RuntimePaths, writer: SpoolWriter
+) -> HoneypotRuntime:
+    """Seleciona o runtime de iscas conforme a configuracao."""
+    if config.honeypot.runtime == "docker":
+        return DockerHoneypotManager(config, paths)
+    return HoneypotManager(writer)
 
 
 class HoneypotManager:

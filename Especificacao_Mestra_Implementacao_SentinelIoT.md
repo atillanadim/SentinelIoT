@@ -4,7 +4,7 @@
 
 **Versão:** 1.0\
 **Tipo:** Especificação técnica para desenvolvimento do MVP\
-**Responsável pelo produto:** Desenvolvedor individual\
+**Responsável pelo produto:** s0ra\
 **Produto:** SentinelIoT --- defesa proativa de redes IoT por Deception
 Technology\
 **Stack-base:** Python, Docker, SQLite no MVP, integração controlada com
