@@ -5,6 +5,10 @@ executa serviços-isca (honeypots) que simulam uma câmera IP, um roteador, um S
 corporativo e um dispositivo Telnet, registra interações suspeitas e monta uma
 lista de IPs para decisão do administrador.
 
+> 📄 **Apresentação acadêmica:** [CAPA.md](CAPA.md) reúne resumo, objetivos,
+> arquitetura, funcionamento e a explicação do que o atacante precisa fazer para
+> o Sentinel responder.
+
 > **Status atual:** runtimes `local` (em processo, padrão no Windows) e `docker`
 > (iscas isoladas em container) implementados, com o mesmo spool JSONL, SQLite e
 > lista de ban. O dashboard local somente leitura (`serve`) está disponível para
@@ -266,6 +270,7 @@ tests/             testes unitários e de integração
 
 ## Documentação
 
+- [Apresentação acadêmica (CAPA.md)](CAPA.md)
 - [Arquitetura](docs/architecture.md)
 - [Modelo de ameaças](docs/threat-model.md)
 - [Instalação](docs/installation.md)
