@@ -368,7 +368,7 @@ function Test-Isolation {
     Write-Host '  ip route'
     Write-Host '  getent hosts example.com || true'
     Write-Host '  curl --max-time 3 http://example.com || true'
-    Write-Host '  ping -c 2 192.168.1.1 || true'
+    Write-Host '  ping -c 2 192.0.2.1 || true'  # faixa de exemplo (RFC 5737)
     Write-Host ''
 
     return ($issues.Count -eq 0)

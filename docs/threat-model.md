@@ -76,7 +76,7 @@ de configuração correta do host.
 ## 6. Segurança do laboratório
 
 - Usar somente VM e rede host-only dedicadas.
-- Não usar a rede doméstica 192.168.1.0/24 para testes.
+- Não usar a rede doméstica 192.0.2.0/24 para testes (faixa de exemplo, RFC 5737).
 - Não acessar câmeras ou dispositivos IoT reais.
 - Criar snapshot antes de qualquer teste de firewall.
 - Registrar autorização em `docs/lab-authorization.md`.

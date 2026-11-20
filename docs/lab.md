@@ -123,7 +123,7 @@ Concluído e verificado em 2026-11-08:
 - Projeto validado dentro da VM: `pytest` 1 passed, `ruff` sem violações e
   `mypy` sem erros em 11 arquivos.
 - Isolamento revalidado: DNS externo indisponível, Internet bloqueada e
-  `192.168.1.1` inacessível.
+  `192.0.2.1` inacessível (faixa de exemplo, RFC 5737 — não é uma rede real).
 - Snapshot `clean-os` com UUID `077990be-a08d-47e5-b0eb-e0bca653df00`.
 - Snapshot `toolchain-ready` com UUID
   `c0d814a5-65db-462b-8b0d-efca1d042c5d`.

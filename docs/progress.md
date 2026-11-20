@@ -131,7 +131,8 @@ Limitações conhecidas desta etapa:
 
 Autorização registrada em `docs/lab-authorization.md`. Escopo: rede host-only
 `192.168.57.0/24`, VM `sentinel-lab` e, se necessário, VM `attacker`. A rede
-doméstica `192.168.1.0/24` e a Internet não fazem parte dos testes.
+doméstica `192.0.2.0/24` (faixa de exemplo, RFC 5737) e a Internet não fazem
+parte dos testes.
 
 Já executado:
 
@@ -241,7 +242,7 @@ Docker 29.9.3 static, sem rota padrão.
 | Tipagem | `.venv/bin/python -m mypy` | Success: no issues em 11 arquivos |
 | DNS externo | `getent hosts example.com` | Não resolve |
 | Internet | `curl --max-time 5 http://example.com` | Bloqueado |
-| Rede doméstica | `curl --max-time 5 http://192.168.1.1` | Inacessível |
+| Rede doméstica (faixa de exemplo RFC 5737) | `curl --max-time 5 http://192.0.2.1` | Inacessível |
 | Snapshot | `VBoxManage snapshot sentinel-lab list` | `clean-os` e `toolchain-ready` |
 | Restauração `clean-os` | restaurar e consultar binários | Sem Docker, uv, Python 3.11 ou projeto |
 | Restauração `toolchain-ready` | restaurar e repetir testes | Docker, `hello-world`, `pytest`, `ruff` e `mypy` ok |

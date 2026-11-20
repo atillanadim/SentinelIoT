@@ -13,11 +13,6 @@
 | | |
 |---|---|
 | **Autor** | s0ra |
-| **Instituição** | _[preencher: instituição de ensino]_ |
-| **Curso** | _[preencher: curso / programa]_ |
-| **Orientador(a)** | _[preencher: nome]_ |
-| **Coorientador(a)** | _[opcional]_ |
-| **Tipo de trabalho** | _[preencher: TCC, projeto integrador, iniciação científica ou similar]_ |
 | **Versão do produto** | 0.1.0 (MVP) |
 | **Data** | Novembro de 2026 |
 | **Repositório** | `SentinelIoT` |

@@ -899,8 +899,8 @@ def run_selftest() -> int:
     if blockable("192.168.57.1")[0]:
         print("FALHA: rede de gerenciamento deveria ser protegida")
         return 1
-    if blockable("192.168.1.9")[0]:
-        print("FALHA: rede real deveria ser recusada")
+    if blockable("192.0.2.9")[0]:  # faixa de exemplo (RFC 5737)
+        print("FALHA: rede externa de exemplo deveria ser recusada")
         return 1
     if not blockable("10.10.10.20")[0]:
         print("FALHA: atacante do laboratório deveria ser bloqueável")

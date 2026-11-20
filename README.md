@@ -31,6 +31,8 @@ lista de IPs para decisão do administrador.
 - `scan` é uma varredura passiva do spool local; não é um scanner de rede.
 - A isca só detecta o tráfego que chega até ela. Ausência de alertas não prova
   que a rede está livre de comprometimento.
+- As faixas `192.0.2.0/24` e `203.0.113.0/24` usadas na documentação são apenas
+  faixas de exemplo reservadas pela RFC 5737; não representam redes reais.
 - As iscas escutam em `127.0.0.1` por padrão. Não publique em `0.0.0.0` sem uma
   rede de laboratório isolada e autorização.
 

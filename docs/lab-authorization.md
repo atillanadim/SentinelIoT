@@ -9,7 +9,7 @@ em ambiente de terceiros.
 
 ## 1. Identificação
 
-- Responsável pelo laboratório: Sora (responsável pelo host local)
+- Responsável pelo laboratório: s0ra (responsável pelo host local)
 - Organização: uso pessoal / laboratório próprio
 - Contato: operador local
 - Data de início: 2026-11-08
@@ -33,7 +33,8 @@ em ambiente de terceiros.
 
 ## 3. Fora de escopo
 
-- Rede doméstica de produção `192.168.1.0/24`.
+- Rede doméstica de produção `192.0.2.0/24` (faixa de exemplo reservada pela
+  RFC 5737, usada apenas para ilustrar a rede que fica fora de escopo).
 - Dispositivos IoT reais.
 - Redes de terceiros.
 - Internet a partir da VM de laboratório (exceto a janela de provisionamento
@@ -59,7 +60,7 @@ em ambiente de terceiros.
   (`077990be-a08d-47e5-b0eb-e0bca653df00`) e `toolchain-ready`
   (`c0d814a5-65db-462b-8b0d-efca1d042c5d`)
 - Procedimento de restauração: `VBoxManage snapshot sentinel-lab restore <nome>`
-- Responsável pela restauração: Sora
+- Responsável pela restauração: s0ra
 - Teste de restauração realizado em: 2026-11-08, nos dois snapshots
 
 ## 6. Dados e privacidade
@@ -67,7 +68,7 @@ em ambiente de terceiros.
 - Dados coletados: metadados mínimos de conexão (IP, porta, serviço, tipo de
   evento, severidade, timestamp e identificadores técnicos)
 - Retenção: 90 dias, sujeita a revisão
-- Responsável pelo descarte: Sora
+- Responsável pelo descarte: s0ra
 - Tratamento de dados pessoais: minimização, acesso local restrito, sem
   telemetria para nuvem
 - Canal para solicitações: responsável pelo laboratório
@@ -79,7 +80,7 @@ e que o escopo acima será respeitado. Entendo que o SentinelIoT é uma camada
 complementar e que nenhum resultado deve ser interpretado como garantia de
 segurança.
 
-- Nome: Sora
+- Nome: s0ra
 - Assinatura: ______________________ (pendente)
 - Data: 2026-11-08
 
@@ -87,15 +88,15 @@ segurança.
 
 | Data | Teste | Autorizado por | Resultado | Evidência |
 |---|---|---|---|---|
-| 2026-11-08 | Criação da rede host-only `192.168.57.0/24` | Sora | Concluído | `VBoxManage list hostonlyifs` / `list dhcpservers` |
-| 2026-11-08 | Criação do esqueleto da VM `sentinel-lab` | Sora | Concluído | `VBoxManage showvminfo sentinel-lab` |
-| 2026-11-08 | Instalação do Ubuntu 24.04.5 | Sora | Concluído | `lsb_release -ds`; SHA-256 da ISO |
-| 2026-11-08 | Provisionamento offline da toolchain | Sora | Concluído | `python3.11 --version`, `uv --version`, `docker info` |
-| 2026-11-08 | Teste de isolamento (sem Internet / sem `192.168.1.0/24`) | Sora | Concluído | `ip route`, `getent hosts`, `curl` |
-| 2026-11-08 | Snapshot limpo (`clean-os`) | Sora | Concluído | `VBoxManage snapshot list` |
-| 2026-11-08 | Snapshot com toolchain (`toolchain-ready`) | Sora | Concluído | `VBoxManage snapshot list` |
-| 2026-11-08 | Restauração de `clean-os` | Sora | Concluído | Sem Docker, uv, Python 3.11 ou projeto |
-| 2026-11-08 | Restauração de `toolchain-ready` | Sora | Concluído | `pytest` 1 passed; `ruff`; `mypy`; `hello-world` |
+| 2026-11-08 | Criação da rede host-only `192.168.57.0/24` | s0ra | Concluído | `VBoxManage list hostonlyifs` / `list dhcpservers` |
+| 2026-11-08 | Criação do esqueleto da VM `sentinel-lab` | s0ra | Concluído | `VBoxManage showvminfo sentinel-lab` |
+| 2026-11-08 | Instalação do Ubuntu 24.04.5 | s0ra | Concluído | `lsb_release -ds`; SHA-256 da ISO |
+| 2026-11-08 | Provisionamento offline da toolchain | s0ra | Concluído | `python3.11 --version`, `uv --version`, `docker info` |
+| 2026-11-08 | Teste de isolamento (sem Internet / sem `192.0.2.0/24`) | s0ra | Concluído | `ip route`, `getent hosts`, `curl` |
+| 2026-11-08 | Snapshot limpo (`clean-os`) | s0ra | Concluído | `VBoxManage snapshot list` |
+| 2026-11-08 | Snapshot com toolchain (`toolchain-ready`) | s0ra | Concluído | `VBoxManage snapshot list` |
+| 2026-11-08 | Restauração de `clean-os` | s0ra | Concluído | Sem Docker, uv, Python 3.11 ou projeto |
+| 2026-11-08 | Restauração de `toolchain-ready` | s0ra | Concluído | `pytest` 1 passed; `ruff`; `mypy`; `hello-world` |
 
 ## 9. Emenda 2026-11-09 — laboratório de pentest
 
@@ -115,7 +116,7 @@ Autorização adicional registrada em conversa com o responsável:
   ofensivos. O roteador bloqueia `10.0.0.0/8`, `192.168.0.0/16`,
   `172.16.0.0/12` e `169.254.0.0/16` no forward, com exceção de
   `10.0.2.0/24` (gateway/DNS do NAT), impedindo acesso à rede real
-  `192.168.1.0/24`.
+  `192.0.2.0/24`.
 - **Dados:** apenas metadados; senhas, corpos, query strings e payloads não
   são persistidos.
 - **Interrupção:** desligar as VMs, desconectar a NIC4 (`setlinkstate4 off`) e
@@ -123,7 +124,7 @@ Autorização adicional registrada em conversa com o responsável:
 - **Proibição mantida:** bridge para a rede doméstica e qualquer ataque fora de
   `10.10.10.0/24`.
 
-- Nome: Sora
+- Nome: s0ra
 - Data: 2026-11-09
 - Assinatura: ______________________ (pendente)
 
@@ -148,7 +149,7 @@ Autorização registrada em conversa com o responsável, seguindo o
   `fw4`, TTL padrão `900` s, escopo `192.168.58.0/24`, allowlist
   `192.168.58.1/32`, `192.168.58.2/32` e `192.168.57.0/24`, limite de 50
   bloqueios ativos. O agente inicia em `mode = "observe"`.
-- **Fora de escopo:** `192.168.1.0/24` (rede doméstica), Internet a partir das
+- **Fora de escopo:** `192.0.2.0/24` (rede doméstica), Internet a partir das
   VMs do lab, bridge para a rede física, câmeras e dispositivos reais.
 - **NICs em bridge:** as NICs em bridge existentes (`router` NIC3 e
   `alvoDebian` NIC2, além da NIC2 do Kali) foram **desligadas**
@@ -163,7 +164,7 @@ Autorização registrada em conversa com o responsável, seguindo o
 - **Interrupção:** desligar as VMs (`VBoxManage controlvm <vm> acpipowerbutton`),
   manter as NICs bridge desligadas e, se necessário, restaurar o snapshot.
 - **Proibição mantida:** qualquer ataque fora de `192.168.58.0/24` e
-  `192.168.57.0/24`, e qualquer tráfego para a rede real `192.168.1.0/24`.
+  `192.168.57.0/24`, e qualquer tráfego para a rede real `192.0.2.0/24`.
 - **Credenciais:** a password de root do OpenWrt não é versionada; deve ser
   guardada fora do repositório.
 
@@ -179,6 +180,6 @@ Evidência da configuração do router (verificações reais por consola série)
 | Regras pré-existentes | `uci show firewall` | 9 antes, 10 depois (só a nova) |
 | Persistência | reboot + repetir | tudo mantido |
 
-- Nome: Sora
+- Nome: s0ra
 - Data: 2026-11-10
 - Assinatura: ______________________ (pendente)
